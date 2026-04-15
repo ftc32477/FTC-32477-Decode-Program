@@ -5,26 +5,36 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "TeleOp_Decode_V2", group = "Main")
+@TeleOp(name = "TeleOp_Decode_V3", group = "Main")
 public class TeleOp_Decode extends LinearOpMode {
 
     RobotHardware robot = new RobotHardware();
 
-    // 计时器用于控制传输动作的时长
-    ElapsedTime transferTimer = new ElapsedTime();
-    boolean isTransferring = false;
-    boolean lastA = false;
+    // 计时器与状态变量
+    ElapsedTime loaderTimer = new ElapsedTime();
+    boolean isLoaderRunning = false;
+    boolean lastLB = false;
 
     double liftPosition = 0.5;
 
+    // 设定 60 度的基准位置 (60/180 = 0.333)
+    final double LOADER_HOME = 0.333;
+
     @Override
     public void runOpMode() {
+        // 执行包含10秒归位逻辑的初始化
         robot.init(hardwareMap);
 
-        telemetry.addData("Status", "Ready");
+        telemetry.addData("Status", "Initialized - Servo Reset Done");
         telemetry.update();
 
         waitForStart();
+
+        // ==========================================
+        // 正式程序开始：立即旋转到 60 度作为初始零点
+        // ==========================================
+        robot.loaderservo.setPosition(LOADER_HOME);
+        sleep(500); // 短暂等待确保舵机到位
 
         while (opModeIsActive()) {
             // ==========================================
@@ -50,46 +60,52 @@ public class TeleOp_Decode extends LinearOpMode {
             // 2. 机构控制 (Driver 2)
             // ==========================================
 
-            // --- A. Intake (RT吸/LT吐) ---
+            // --- A. Intake ---
             if (gamepad2.right_trigger > 0.1) {
                 robot.intake.setPower(0.9);
-            } else if (gamepad2.left_trigger > 0.1) {
+            } else if (gamepad2.right_bumper) {
                 robot.intake.setPower(-0.9);
             } else {
                 robot.intake.setPower(0.0);
             }
 
-            // --- B. Shooter (X开/B关) ---
-            if (gamepad2.x) {
+            // --- B. Shooter ---
+            if (gamepad2.left_trigger > 0.1) {
                 robot.s1.setPower(1.0);
                 robot.s2.setPower(1.0);
-            } else if (gamepad2.b) {
+            } else {
                 robot.s1.setPower(0.0);
                 robot.s2.setPower(0.0);
             }
 
-            // --- C. 传输系统 (Center舵机 + Loader电机) ---
-            // 触发逻辑：按下A键且当前没有正在进行的传输动作
-            if (gamepad2.a && !lastA && !isTransferring) {
-                isTransferring = true;
-                transferTimer.reset(); // 重置计时器
+            // --- C. Center ---
+            if (gamepad2.a) {
+                robot.center.setPosition(1.0);
+            } else {
+                robot.center.setPosition(0.5);
             }
-            lastA = gamepad2.a;
 
-            if (isTransferring) {
-                // 如果在 0.8 秒内
-                if (transferTimer.seconds() < 0.8) {
-                    robot.loader.setPower(0.7);    // Loader 电机转动
-                    robot.center.setPosition(1.0); // 360舵机全速转动
+            // --- D. Loader 控制 (基于 LOADER_HOME 动作) ---
+            if (gamepad2.left_bumper && !lastLB && !isLoaderRunning) {
+                isLoaderRunning = true;
+                loaderTimer.reset();
+            }
+            lastLB = gamepad2.left_bumper;
+
+            if (isLoaderRunning) {
+                if (loaderTimer.seconds() < 1.0) {
+                    // 在 60 度基准上，额外顺时针转动一点进行推料
+                    robot.loaderservo.setPosition(LOADER_HOME + 0.1);
+                    robot.loader.setPower(0.7);
                 } else {
-                    // 时间到，停止所有动作
+                    // 序列结束，回到 60 度位置
+                    robot.loaderservo.setPosition(LOADER_HOME);
                     robot.loader.setPower(0.0);
-                    robot.center.setPosition(0.5); // 0.5 在360舵机中代表停止
-                    isTransferring = false;
+                    isLoaderRunning = false;
                 }
             }
 
-            // --- D. Lift (D-pad上下微调) ---
+            // --- E. Lift ---
             if (gamepad2.dpad_up) liftPosition += 0.005;
             else if (gamepad2.dpad_down) liftPosition -= 0.005;
 
@@ -99,9 +115,8 @@ public class TeleOp_Decode extends LinearOpMode {
             // ==========================================
             // 3. 遥测
             // ==========================================
-            telemetry.addData("传输状态", isTransferring ? "运行中" : "待机");
-            telemetry.addData("传输计时", "%.2f s", transferTimer.seconds());
-            telemetry.addData("俯仰角", "%.3f", liftPosition);
+            telemetry.addData("Loader Status", isLoaderRunning ? "Running" : "Ready");
+            telemetry.addData("Servo Position", robot.loaderservo.getPosition());
             telemetry.update();
         }
     }
