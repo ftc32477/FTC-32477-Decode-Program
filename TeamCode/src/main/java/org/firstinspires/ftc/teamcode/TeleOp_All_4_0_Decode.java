@@ -41,7 +41,7 @@ public class TeleOp_All_4_0_Decode extends LinearOpMode {
         final String MOTOR_SHOOTER_2 = "s2";
         final String SERVO_PITCH = "pitchServo"; // 新增：俯仰角舵机
         final String SENSOR_IMU = "imu";
-        final String SENSOR_ODO = "odo";         // 新增：Pinpoint 计算机
+        final String SENSOR_ODO = "odocomputer";         // 新增：Pinpoint 计算机
 
         // 操纵杆死区
         final double JOYSTICK_DEADZONE = 0.1;
