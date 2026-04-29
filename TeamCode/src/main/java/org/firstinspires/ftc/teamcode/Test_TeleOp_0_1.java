@@ -88,8 +88,8 @@ public class Test_TeleOp_0_1 extends LinearOpMode {
             telemetry.addLine("--- 机构状态 ---");
             telemetry.addData("当前射击档位", "%.2f", shootSpeed);
 
-            telemetry.addLine("\n--- 位姿对比 (X已取反) ---");
-            telemetry.addData("X (cm)", "%.1f", -pos.getX(DistanceUnit.CM));
+            telemetry.addLine("\n--- 位姿对比 ---");
+            telemetry.addData("X (cm)", "%.1f", pos.getX(DistanceUnit.CM));
             telemetry.addData("Y (cm)", "%.1f", pos.getY(DistanceUnit.CM));
             telemetry.addData("内置 IMU °", "%.1f", robot.imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
             telemetry.addData("Pinpoint °", "%.1f", pos.getHeading(AngleUnit.DEGREES));
