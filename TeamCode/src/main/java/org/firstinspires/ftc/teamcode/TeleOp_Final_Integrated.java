@@ -15,7 +15,7 @@ public class TeleOp_Final_Integrated extends LinearOpMode {
     private Servo aservo1, aservo2;
     private Servo iservo1, iservo2;
 
-    // --- 2. 状态变量 ---
+    // --- 2. 状态变量 -- -
     private double shootSpeed = 1.0;       // 电机功率变量[cite: 7]
     private double aCurrentPosition = 0.4; // Angle系列默认位置[cite: 5]
     private double iCurrentPosition = 0.0; // Inverted系列默认位置[cite: 6]

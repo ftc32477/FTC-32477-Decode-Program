@@ -7,12 +7,12 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp(name = "Test_Servo_Normal", group = "Test")
 public class Test_Servo_Normal extends LinearOpMode {
 
-    private Servo servo0;
+    private Servo servo1;
 
     @Override
     public void runOpMode() {
-        // 初始化 0 口的普通舵机，硬件配置中的名字必须为 "servo0"
-        servo0 = hardwareMap.get(Servo.class, "servo0");
+        // 初始化 0 口的普通舵机，硬件配置中的名字必须为 "servo1"
+        servo1 = hardwareMap.get(Servo.class, "servo1");
 
         telemetry.addData("状态", "初始化完成，等待启动...");
         telemetry.update();
@@ -41,7 +41,7 @@ public class Test_Servo_Normal extends LinearOpMode {
             }
 
             // 执行旋转
-            servo0.setPosition(position);
+            servo1.setPosition(position);
 
             telemetry.addData("目标位置", position);
             telemetry.update();

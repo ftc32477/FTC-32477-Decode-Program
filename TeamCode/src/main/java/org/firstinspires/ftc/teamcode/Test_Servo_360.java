@@ -2,40 +2,51 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.PwmControl;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 @TeleOp(name = "Test_Servo_360", group = "Test")
 public class Test_Servo_360 extends LinearOpMode {
 
-    private Servo servo1;
+    private ServoImplEx servo1;
 
     @Override
     public void runOpMode() {
-        // 使用标准的 Servo 类来初始化
-        // 注意：如果你的硬件配置列表里给它起的名字就是 "Full Range Servo"，
-        // 请将这里的 "servo1" 替换成 "Full Range Servo"
-        servo1 = hardwareMap.get(Servo.class, "servo1");
+        servo1 = hardwareMap.get(ServoImplEx.class, "servo1");
 
-        telemetry.addData("状态", "初始化完成，等待启动...");
+        // 设置脉冲范围，确保 1.0 对应 3000us
+        servo1.setPwmRange(new PwmControl.PwmRange(500, 3000));
+
+        telemetry.addData("准备就绪", "按下开始键后，将顺时针旋转3秒后停止");
         telemetry.update();
 
         waitForStart();
 
-        while (opModeIsActive()) {
-            // 对于被配置为普通 Servo 的全向舵机：
-            // 0.5 = 停止
-            // > 0.5 到 1.0 = 正转（数值越靠近 1.0 速度越快）
-            // < 0.5 到 0.0 = 反转（数值越靠近 0.0 速度越快）
-
-            // 设定为 1.0，让它在程序启动后保持全速旋转
+        if (opModeIsActive()) {
+            // --- 1. 开始旋转 ---
+            // 发送 3000us 信号，进入第二种模式：顺时针连续旋转
             servo1.setPosition(1.0);
 
-            telemetry.addData("模式", "已配置为 Full Range Servo (调用 Servo 类)");
-            telemetry.addData("当前位置信号 (代表转速/方向)", servo1.getPosition());
+            telemetry.addData("状态", "正在连续旋转...");
             telemetry.update();
 
-            // 保持输出即可
-            sleep(50);
+            // 持续 3000 毫秒（3秒）
+            sleep(3000);
+
+            // --- 2. 停止旋转 ---
+            // 方式 A：直接禁用 PWM 信号（最保险，舵机将完全失去动力，不会发出嗡嗡声）
+            servo1.setPwmDisable();
+
+            // 方式 B：如果你希望它停在某个固定角度而不是完全无力，可以使用下面的代码替换方式 A
+            // servo1.setPosition(0.5); // 切换回第一种模式，停在中间角度
+
+            telemetry.addData("状态", "已停止");
+            telemetry.update();
+        }
+
+        // 保持程序运行直到手动按下停止，防止代码立刻退出
+        while (opModeIsActive()) {
+            idle();
         }
     }
 }
