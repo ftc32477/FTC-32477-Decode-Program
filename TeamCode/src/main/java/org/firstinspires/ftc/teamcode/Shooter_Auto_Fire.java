@@ -19,7 +19,7 @@ public class Shooter_Auto_Fire extends LinearOpMode {
     // ========== 2. 常数定义 ==========
     private final double TICKS_PER_REV = 537.7;
     private final double P = 15.0, I = 5.0, D = 1.0, F = 12.5;
-    private final double FULL_SPEED_RPM = 100.0;
+    private final double FULL_SPEED_RPM = 500.0;
 
     // 【新增】转速判定容差：实测转速与目标转速差距小于此值时，视为达标[cite: 2]
     private final double RPM_TOLERANCE = 10.0;
