@@ -21,7 +21,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
  * 3. 坐标修正：调整 Pinpoint 编码器方向以实现向前为正
  * 4. 传感器重置：初始化时 IMU 和 Odo 自动归零
  */
-@TeleOp(name = "32477_V3_Final_Direction_Test", group = "Production")
+@TeleOp(name = "TeleOp_Chassis_V3", group = "Production")
 public class TeleOp_Chassis_V3 extends LinearOpMode {
 
     private DcMotor lf, rf, lb, rb;
@@ -60,7 +60,7 @@ public class TeleOp_Chassis_V3 extends LinearOpMode {
 
         // --- 4. Pinpoint 里程计配置[cite: 7] ---
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setOffsets(0.0, -160.0); // 沿用二代车稳定参数[cite: 7]
+        odo.setOffsets(83.9, 69.4); // 沿用二代车稳定参数[cite: 7]
 
         /*
          * 坐标系修正逻辑：
