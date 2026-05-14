@@ -60,7 +60,7 @@ public class TeleOp_Chassis_V3 extends LinearOpMode {
 
         // --- 4. Pinpoint 里程计配置[cite: 7] ---
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setOffsets(0.0, -160.0); // 沿用二代车稳定参数[cite: 7]
+        odo.setOffsets(14.0, 92.0); // 沿用二代车稳定参数[cite: 7]
 
         /*
          * 坐标系修正逻辑：
