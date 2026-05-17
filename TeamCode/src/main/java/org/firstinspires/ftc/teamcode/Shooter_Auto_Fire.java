@@ -19,7 +19,7 @@ public class Shooter_Auto_Fire extends LinearOpMode {
     // ========== 2. 常数定义 ==========
     // 针对 6000RPM 电机修正比率
     private final double TICKS_PER_REV = 28.0;
-    private final double P = 10.0, I = 3.0, D = 0.0, F = 12.0;
+    private final double P = 6.2, I = 0.0, D = 1.5, F = 17.5;
     private final double RPM_TOLERANCE = 150.0;
 
     // ========== 3. 状态变量 ==========
@@ -67,16 +67,16 @@ public class Shooter_Auto_Fire extends LinearOpMode {
 
             // --- 4. 档位设定 (完全模仿原逻辑) ---
             if (gamepad1.dpad_up) {
-                targetRPM = 5500.0;
+                targetRPM = 2000.0;
                 iCurrentPosition = 1.0;
             } else if (gamepad1.dpad_right) {
-                targetRPM = 5500.0;
+                targetRPM = 2000.0;
                 iCurrentPosition = 0.5;
             } else if (gamepad1.dpad_left) {
-                targetRPM = 5500.0;
+                targetRPM = 2000.0;
                 iCurrentPosition = 0.0;
             } else if (gamepad1.dpad_down) {
-                targetRPM = 4000.0;
+                targetRPM = 1600.0;
                 iCurrentPosition = 0.0;
             }
 
