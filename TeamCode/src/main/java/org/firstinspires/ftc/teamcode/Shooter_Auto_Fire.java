@@ -19,13 +19,16 @@ public class Shooter_Auto_Fire extends LinearOpMode {
     // ========== 2. 常数定义 ==========
     // 针对 6000RPM 电机修正比率
     private final double TICKS_PER_REV = 28.0;
-    private final double P = 6.2, I = 0.0, D = 1.5, F = 17.5;
+    private final double P = 8.5, I = 0.0, D = 1.9, F = 17.5;
+    //保留数值：6.2，0.0，1.5，17.5
     private final double RPM_TOLERANCE = 150.0;
+
+    // 【修改】怠速提升至 1400 RPM，获取极速启动响应
+    private final double IDLE_RPM = 1400.0;
 
     // ========== 3. 状态变量 ==========
     private double targetRPM = 0;
-    // 【修正】俯仰初始值回归 0.0 (模仿原始程序)
-    private double iCurrentPosition = 0.0;
+    private double iCurrentPosition = 0.0; // 俯仰初始值回归 0.0
 
     @Override
     public void runOpMode() {
@@ -43,9 +46,9 @@ public class Shooter_Auto_Fire extends LinearOpMode {
         s2.setDirection(DcMotor.Direction.FORWARD);
 
         // --- 舵机方向设定 ---
-        // 挡板使用 REVERSE，而俯仰舵机我们通过 setPosition 逻辑来实现“一侧0->1，一侧1->0”
+        // 挡板2 和 俯仰2 均在底层硬件上设置为 REVERSE
         aservo2.setDirection(Servo.Direction.REVERSE);
-        // 移除 iservo2 的 setDirection，避免逻辑冲突
+        iservo2.setDirection(Servo.Direction.REVERSE);
 
         // 配置电机模式
         PIDFCoefficients pidf = new PIDFCoefficients(P, I, D, F);
@@ -58,7 +61,7 @@ public class Shooter_Auto_Fire extends LinearOpMode {
         aservo1.setPosition(0.4);
         aservo2.setPosition(0.4);
 
-        telemetry.addLine("32477: 系统已准备就绪 (RPM监控+俯仰0.0初始)");
+        telemetry.addLine("32477: 系统已准备就绪 (1400RPM高性能怠速版)");
         telemetry.update();
 
         waitForStart();
@@ -81,12 +84,22 @@ public class Shooter_Auto_Fire extends LinearOpMode {
             }
 
             // --- 5. 射击电机动力输出 ---
-            double velocityCommand = 0;
+            double currentTargetSpeed = 0;
             boolean isTriggerPressed = gamepad1.right_trigger > 0.1;
 
             if (isTriggerPressed) {
-                velocityCommand = (targetRPM * TICKS_PER_REV) / 60.0;
+                // 正常射击状态跑满档位目标速
+                currentTargetSpeed = targetRPM;
+            } else if (targetRPM > 0) {
+                // 已选定档位但未射击，进入 1400 RPM 高能预热怠速
+                currentTargetSpeed = IDLE_RPM;
+            } else {
+                // 未选定任何档位，彻底静止
+                currentTargetSpeed = 0;
             }
+
+            // 计算对应的 Encoder 速度指令并写入电机
+            double velocityCommand = (currentTargetSpeed * TICKS_PER_REV) / 60.0;
             s1.setVelocity(velocityCommand);
             s2.setVelocity(velocityCommand);
 
@@ -94,12 +107,13 @@ public class Shooter_Auto_Fire extends LinearOpMode {
             double actualRPM1 = (s1.getVelocity() / TICKS_PER_REV) * 60.0;
             double actualRPM2 = (s2.getVelocity() / TICKS_PER_REV) * 60.0;
 
-            boolean speedReady = (targetRPM > 500) &&
+            // 严格的速度就绪判定：只有当准备发射，且当前速度逼近目标射击速度时才释放挡板
+            boolean speedReady = isTriggerPressed && (targetRPM > 500) &&
                     (Math.abs(actualRPM1 - targetRPM) < RPM_TOLERANCE) &&
                     (Math.abs(actualRPM2 - targetRPM) < RPM_TOLERANCE);
 
-            // 自动化挡板
-            if (isTriggerPressed && speedReady) {
+            // 自动化挡板控制
+            if (speedReady) {
                 aservo1.setPosition(0.0);
                 aservo2.setPosition(0.0);
             } else {
@@ -107,22 +121,21 @@ public class Shooter_Auto_Fire extends LinearOpMode {
                 aservo2.setPosition(0.4);
             }
 
-            // --- 7. 【俯仰核心】左侧 0->1，右侧 1->0 镜像逻辑 ---
+            // --- 7. 俯仰核心逻辑 ---
             if (gamepad1.x) iCurrentPosition = Range.clip(iCurrentPosition + 0.005, 0, 1.0);
             if (gamepad1.y) iCurrentPosition = Range.clip(iCurrentPosition - 0.005, 0, 1.0);
 
             iservo1.setPosition(iCurrentPosition);
-            iservo2.setPosition(1.0 - iCurrentPosition); // 数学镜像防止角力卡死
+            iservo2.setPosition(iCurrentPosition); // 硬件已 REVERSE
 
-            // --- 8. 【回归】详细数据监控 ---
-            telemetry.addData("Target RPM", "%.0f", targetRPM);
+            // --- 8. 详细数据监控 ---
+            telemetry.addData("Selected Target RPM", "%.0f", targetRPM);
+            telemetry.addData("Current Run Speed", "%.0f RPM", currentTargetSpeed);
             telemetry.addData("S1 Actual RPM", "%.1f", actualRPM1);
             telemetry.addData("S2 Actual RPM", "%.1f", actualRPM2);
-            telemetry.addData("Ready Status", speedReady ? "YES" : "NO");
+            telemetry.addData("Ready Status", speedReady ? "READY TO SHOOT" : "NOT READY / IDLE");
             telemetry.addLine("----------");
             telemetry.addData("Pitch Position", "%.3f", iCurrentPosition);
-            telemetry.addData("Servo1 Pos", "%.3f", iCurrentPosition);
-            telemetry.addData("Servo2 Pos", "%.3f", 1.0 - iCurrentPosition);
             telemetry.update();
         }
     }
