@@ -19,12 +19,15 @@ public class Shooter_Auto_Fire extends LinearOpMode {
     // ========== 2. 常数定义 ==========
     // 针对 6000RPM 电机修正比率
     private final double TICKS_PER_REV = 28.0;
-    private final double P = 8.5, I = 0.0, D = 1.9, F = 17.5;
-    //保留数值：6.2，0.0，1.5，17.5
+    private final double P = 15.0, I = 0.0, D = 1.5, F = 17.0;
+    // 保留数值：6.2，0.0，1.5，17.5
     private final double RPM_TOLERANCE = 150.0;
 
     // 【修改】怠速提升至 1400 RPM，获取极速启动响应
     private final double IDLE_RPM = 1400.0;
+
+    // 【新增】混合算法切换阈值
+    private final double BANGBANG_THRESHOLD = 80.0;
 
     // ========== 3. 状态变量 ==========
     private double targetRPM = 0;
@@ -46,73 +49,95 @@ public class Shooter_Auto_Fire extends LinearOpMode {
         s2.setDirection(DcMotor.Direction.FORWARD);
 
         // --- 舵机方向设定 ---
-        // 挡板2 和 俯仰2 均在底层硬件上设置为 REVERSE
         aservo2.setDirection(Servo.Direction.REVERSE);
         iservo2.setDirection(Servo.Direction.REVERSE);
 
-        // 配置电机模式
-        PIDFCoefficients pidf = new PIDFCoefficients(P, I, D, F);
-        s1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
-        s2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
+        // 重置并启用内置 PIDF 速度闭环
+        s1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        s2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         s1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         s2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // 写入你调试好的高参数 PIDF 核心系数
+        s1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(P, I, D, F));
+        s2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(P, I, D, F));
 
         // 初始挡板物理闭合 (0.4)
         aservo1.setPosition(0.4);
         aservo2.setPosition(0.4);
 
-        telemetry.addLine("32477: 系统已准备就绪 (1400RPM高性能怠速版)");
+        telemetry.addLine("32477: 系统已准备就绪 (PIDF + Bang-Bang 混合强补版)");
         telemetry.update();
 
         waitForStart();
 
         while (opModeIsActive()) {
 
-            // --- 4. 档位设定 (完全模仿原逻辑) ---
+            // --- 4. 档位设定 ---
             if (gamepad1.dpad_up) {
-                targetRPM = 2000.0;
+                targetRPM = 2150.0;
                 iCurrentPosition = 1.0;
             } else if (gamepad1.dpad_right) {
-                targetRPM = 2000.0;
+                targetRPM = 2150.0;
                 iCurrentPosition = 0.5;
             } else if (gamepad1.dpad_left) {
-                targetRPM = 2000.0;
+                targetRPM = 2150.0;
                 iCurrentPosition = 0.0;
             } else if (gamepad1.dpad_down) {
                 targetRPM = 1600.0;
                 iCurrentPosition = 0.0;
             }
 
-            // --- 5. 射击电机动力输出 ---
+            // --- 5. 目标速度逻辑状态切换 ---
             double currentTargetSpeed = 0;
             boolean isTriggerPressed = gamepad1.right_trigger > 0.1;
 
             if (isTriggerPressed) {
-                // 正常射击状态跑满档位目标速
                 currentTargetSpeed = targetRPM;
             } else if (targetRPM > 0) {
-                // 已选定档位但未射击，进入 1400 RPM 高能预热怠速
                 currentTargetSpeed = IDLE_RPM;
             } else {
-                // 未选定任何档位，彻底静止
                 currentTargetSpeed = 0;
             }
 
-            // 计算对应的 Encoder 速度指令并写入电机
-            double velocityCommand = (currentTargetSpeed * TICKS_PER_REV) / 60.0;
-            s1.setVelocity(velocityCommand);
-            s2.setVelocity(velocityCommand);
-
-            // --- 6. RPM 监控与判定 ---
+            // --- 6. RPM 实时数据获取 ---
             double actualRPM1 = (s1.getVelocity() / TICKS_PER_REV) * 60.0;
             double actualRPM2 = (s2.getVelocity() / TICKS_PER_REV) * 60.0;
 
-            // 严格的速度就绪判定：只有当准备发射，且当前速度逼近目标射击速度时才释放挡板
+            // --- 7. PIDF + Bang-Bang 混合动态控速核心 ---
+            if (currentTargetSpeed > 100) {
+                double targetTicksPerSec = (currentTargetSpeed / 60.0) * TICKS_PER_REV;
+
+                // 计算当前转速与目标的绝对差值
+                double error1 = currentTargetSpeed - actualRPM1;
+                double error2 = currentTargetSpeed - actualRPM2;
+
+                // --- S1 电机混合控制 ---
+                if (error1 >= BANGBANG_THRESHOLD) {
+                    s1.setPower(1.0); // 掉速超过80转，立刻触发 Bang-Bang 砸满电压强补
+                } else {
+                    s1.setVelocity(targetTicksPerSec); // 误差进入80转内，切回 PIDF 丝滑精准控速
+                }
+
+                // --- S2 电机混合控制 ---
+                if (error2 >= BANGBANG_THRESHOLD) {
+                    s2.setPower(1.0); // 掉速超过80转，立刻触发 Bang-Bang 砸满电压强补
+                } else {
+                    s2.setVelocity(targetTicksPerSec); // 误差进入80转内，切回 PIDF 丝滑精准控速
+                }
+            } else {
+                // 未选定任何状态或处于 0 速，彻底关停电机
+                s1.setVelocity(0);
+                s2.setVelocity(0);
+                s1.setPower(0);
+                s2.setPower(0);
+            }
+
+            // --- 8. RPM 监控与挡板自动化判定 ---
             boolean speedReady = isTriggerPressed && (targetRPM > 500) &&
                     (Math.abs(actualRPM1 - targetRPM) < RPM_TOLERANCE) &&
                     (Math.abs(actualRPM2 - targetRPM) < RPM_TOLERANCE);
 
-            // 自动化挡板控制
             if (speedReady) {
                 aservo1.setPosition(0.0);
                 aservo2.setPosition(0.0);
@@ -121,18 +146,21 @@ public class Shooter_Auto_Fire extends LinearOpMode {
                 aservo2.setPosition(0.4);
             }
 
-            // --- 7. 俯仰核心逻辑 ---
+            // --- 9. 俯仰核心逻辑 ---
             if (gamepad1.x) iCurrentPosition = Range.clip(iCurrentPosition + 0.005, 0, 1.0);
             if (gamepad1.y) iCurrentPosition = Range.clip(iCurrentPosition - 0.005, 0, 1.0);
 
             iservo1.setPosition(iCurrentPosition);
-            iservo2.setPosition(iCurrentPosition); // 硬件已 REVERSE
+            iservo2.setPosition(iCurrentPosition);
 
-            // --- 8. 详细数据监控 ---
+            // --- 10. 详细数据监控 ---
             telemetry.addData("Selected Target RPM", "%.0f", targetRPM);
             telemetry.addData("Current Run Speed", "%.0f RPM", currentTargetSpeed);
             telemetry.addData("S1 Actual RPM", "%.1f", actualRPM1);
             telemetry.addData("S2 Actual RPM", "%.1f", actualRPM2);
+            // 监控当前每个电机的控制状态，方便观察切换
+            telemetry.addData("S1 Control Mode", (currentTargetSpeed - actualRPM1 >= BANGBANG_THRESHOLD) ? "BANG-BANG (MAX)" : "PIDF (STEADY)");
+            telemetry.addData("S2 Control Mode", (currentTargetSpeed - actualRPM2 >= BANGBANG_THRESHOLD) ? "BANG-BANG (MAX)" : "PIDF (STEADY)");
             telemetry.addData("Ready Status", speedReady ? "READY TO SHOOT" : "NOT READY / IDLE");
             telemetry.addLine("----------");
             telemetry.addData("Pitch Position", "%.3f", iCurrentPosition);
