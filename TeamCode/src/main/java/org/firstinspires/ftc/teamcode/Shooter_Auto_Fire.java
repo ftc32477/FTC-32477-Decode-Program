@@ -21,7 +21,7 @@ public class Shooter_Auto_Fire extends LinearOpMode {
     private final double TICKS_PER_REV = 28.0;
     private final double P = 15.0, I = 0.0, D = 1.5, F = 17.0;
     // 保留数值：6.2，0.0，1.5，17.5
-    private final double RPM_TOLERANCE = 150.0;
+    private final double RPM_TOLERANCE = 100.0;
 
     // 【修改】怠速提升至 1400 RPM，获取极速启动响应
     private final double IDLE_RPM = 1400.0;
