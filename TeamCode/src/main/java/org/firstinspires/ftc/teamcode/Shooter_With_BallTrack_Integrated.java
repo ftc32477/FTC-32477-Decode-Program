@@ -25,13 +25,13 @@ public class Shooter_With_BallTrack_Integrated extends LinearOpMode {
     // 针对 6000RPM 电机修正比率
     private final double TICKS_PER_REV = 28.0;
     private final double P = 15.0, I = 0.0, D = 1.5, F = 17.0;
-    private final double RPM_TOLERANCE = 100.0;
+    private final double RPM_TOLERANCE = 80.0;
 
     // 怠速提升至 1400 RPM，获取极速启动响应
     private final double IDLE_RPM = 1400.0;
 
     // 混合算法切换阈值
-    private final double BANGBANG_THRESHOLD = 80.0;
+    private final double BANGBANG_THRESHOLD = 30.0;
 
     // ========== 3. 状态变量 ==========
     private double targetRPM = 0;
