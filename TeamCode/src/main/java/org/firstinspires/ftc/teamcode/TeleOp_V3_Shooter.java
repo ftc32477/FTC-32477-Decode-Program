@@ -19,7 +19,7 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
 
     // --- 控速机制参数 ---
     private final double BANGBANG_TRIGGER_THRESHOLD = 70.0;  // 针对正常波动的稳态滤波阈值
-    private final double BANGBANG_HOLD_DURATION = 1.0;        // 狂暴模式持续 1.0 秒
+    private final double BANGBANG_HOLD_DURATION = 1.0;        // 狂暴模式最大持续时间
 
     // 非对称进球锁门限
     private final double RPM_TOLERANCE_LOWER = 45.0;
@@ -37,10 +37,10 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
     private double filteredError1 = 0.0;
     private double filteredError2 = 0.0;
 
-    // 【新增】延迟前馈专属计时器与可调阈值
+    // 延迟前馈专属计时器与可调阈值
     private ElapsedTime feedforwardDelayTimer = new ElapsedTime();
-    private final double FEEDFORWARD_DELAY_SEC = 0.25;  // 你们建议的 0.2-0.3 秒，暂定中间值 0.25 秒，可任意调整
-    private boolean isTimerReset = true;                // 确保计时器仅在初次按下LT时重置一次
+    private final double FEEDFORWARD_DELAY_SEC = 0.25;
+    private boolean isTimerReset = true;
 
     // 独立控制双飞轮的狂暴模式计时器
     private ElapsedTime s1BangTimer = new ElapsedTime();
@@ -60,10 +60,10 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
         s2BangTimer.reset();
         feedforwardDelayTimer.reset();
 
-        telemetry.addLine("32477: V3战车 [延迟前馈-弹道平构版] 已就绪");
-        telemetry.addLine(">> 滞后补偿机制升级:");
-        telemetry.addLine("   - [延迟前馈]: 按下LT后，等待 0.25s 运球空窗期再砸1.0满电压");
-        telemetry.addLine("   - [物理效果]: 消除第一发因盲目提前通电带来的超调（飞得过远），保持三发一致");
+        telemetry.addLine("32477: V3战车 [安全截断自适应前馈版] 已就绪");
+        telemetry.addLine(">> 安全核心修复:");
+        telemetry.addLine("   - [松开RT急停]: 解决Bang-Bang期间松开RT导致飞轮超速飙车漏洞");
+        telemetry.addLine("   - [机制联动]: 保持0.25s进球前馈延迟、低通滤波与非对称进球锁");
         telemetry.update();
 
         waitForStart();
@@ -149,27 +149,23 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
                 }
             }
 
-            // ==================== 5. 【重构核心】带有延迟滤波的前馈判定 ====================
+            // ==================== 5. 带有延迟滤波的前馈判定 ====================
             boolean isLTPressed = gamepad1.left_trigger > 0.1;
             boolean isFeedforwardActive = false;
 
             if (isTriggerPressed && isLTPressed && hasPassedThreshold) {
-                // 如果是刚按下 LT，重置延迟计时器（确保只触发一次计时起点）
                 if (isTimerReset) {
                     feedforwardDelayTimer.reset();
                     isTimerReset = false;
                 }
-
-                // 只有当球道转动过了你们建议的空窗延迟时间（如 0.25s），球即将亲吻飞轮的一瞬间，前馈才爆发！
                 if (feedforwardDelayTimer.seconds() >= FEEDFORWARD_DELAY_SEC) {
                     isFeedforwardActive = true;
                 }
             } else {
-                // 松开 LT 或者未处于进球状态时，强行重置计时锁，准备下一次连发
                 isTimerReset = true;
             }
 
-            // ==================== 6. 射击电机闭环控制 ====================
+            // ==================== 6. 射击电机闭环控制 (引入驾驶员意图安全截断) ====================
             double actualRPM1 = (robot.s1.getVelocity() / robot.SHOOTER_TICKS_PER_REV) * 60.0;
             double actualRPM2 = (robot.s2.getVelocity() / robot.SHOOTER_TICKS_PER_REV) * 60.0;
 
@@ -190,22 +186,25 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
                     }
                 }
 
-                // --- 电机 1 触发决策 (延迟前馈 或 滤波失速超标 共同唤醒) ---
+                // --- 电机 1 触发与维持决策 ---
                 if (isTriggerPressed && !isFirstAcceleration && (isFeedforwardActive || filteredError1 >= BANGBANG_TRIGGER_THRESHOLD)) {
                     s1BangTimer.reset();
                 }
 
+                // 【核心修复】：追加 isTriggerPressed 条件。只有在按着RT射击时，Bang-Bang计时维持才有效。
+                // 如果松开 RT (isTriggerPressed == false)，无论计时器剩多少秒，直接硬性截断，强制滚进 else 走标准 PIDF 降速回怠速！
                 if (isTriggerPressed && !isFirstAcceleration && (s1BangTimer.seconds() < BANGBANG_HOLD_DURATION)) {
                     robot.s1.setPower(1.0);
                 } else {
                     robot.s1.setVelocity(targetTicksPerSec);
                 }
 
-                // --- 电机 2 触发决策 ---
+                // --- 电机 2 触发与维持决策 ---
                 if (isTriggerPressed && !isFirstAcceleration && (isFeedforwardActive || filteredError2 >= BANGBANG_TRIGGER_THRESHOLD)) {
                     s2BangTimer.reset();
                 }
 
+                // 【核心修复】电机 2 同步追加安全截断锁
                 if (isTriggerPressed && !isFirstAcceleration && (s2BangTimer.seconds() < BANGBANG_HOLD_DURATION)) {
                     robot.s2.setPower(1.0);
                 } else {
@@ -248,7 +247,7 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
             robot.iservo1.setPosition(iCurrentPosition);
             robot.iservo2.setPosition(1.0 - iCurrentPosition);
 
-            // ==================== 9. 球道系统 (高效连发，无时间压缩) ====================
+            // ==================== 9. 球道系统 ====================
             String ballTrackStatus = "IDLE";
             double intakePower = 0.0;
             double loadPower = 0.0;
@@ -289,14 +288,12 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
             telemetry.addData("Shooter2 Real", "%.1f RPM", actualRPM2);
             telemetry.addLine("--------------------------------");
 
-            // 实时观察延迟前馈状态
             if (!isLTPressed) {
-                telemetry.addData("Feedforward State", "STANDBY (等待按下LT)");
+                telemetry.addData("Feedforward State", "STANDBY (等待LT)");
             } else if (feedforwardDelayTimer.seconds() < FEEDFORWARD_DELAY_SEC) {
-                telemetry.addData("Feedforward State", "⏳ DELAY COUNTDOWN: %.2f / %.2fs (等球滑行中...)",
-                        feedforwardDelayTimer.seconds(), FEEDFORWARD_DELAY_SEC);
+                telemetry.addData("Feedforward State", "⏳ DELAY: %.2fs", feedforwardDelayTimer.seconds());
             } else {
-                telemetry.addData("Feedforward State", "🔥 TRIGGERED (满电压已切入迎击吃球)");
+                telemetry.addData("Feedforward State", "🔥 ACTIVE");
             }
 
             if (currentTargetSpeed <= 100) {
@@ -306,8 +303,8 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
             } else {
                 double s1TimeLeft = Math.max(0, BANGBANG_HOLD_DURATION - s1BangTimer.seconds());
                 double s2TimeLeft = Math.max(0, BANGBANG_HOLD_DURATION - s2BangTimer.seconds());
-                telemetry.addData("S1 Mode", (s1TimeLeft > 0) ? "⚡ BANG-BANG 狂暴" : "⚙ PIDF稳态");
-                telemetry.addData("S2 Mode", (s2TimeLeft > 0) ? "⚡ BANG-BANG 狂暴" : "⚙ PIDF稳态");
+                telemetry.addData("S1 Mode", (s1TimeLeft > 0 && isTriggerPressed) ? "⚡ BANG-BANG 狂暴" : "⚙ PIDF降速/稳态");
+                telemetry.addData("S2 Mode", (s2TimeLeft > 0 && isTriggerPressed) ? "⚡ BANG-BANG 狂暴" : "⚙ PIDF降速/稳态");
             }
 
             telemetry.addData("Valve Dynamic Gate", hasPassedThreshold ? "🔓 OPENED" : "🔒 LOCKED");
