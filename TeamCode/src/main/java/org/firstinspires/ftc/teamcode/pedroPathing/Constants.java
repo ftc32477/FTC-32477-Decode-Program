@@ -29,11 +29,11 @@ public class Constants {
 
             // --- B. 核心 PIDF 调参 (使用 Pedro Pathing 原生类) ---
             // Translational/Heading 使用标准 PIDF (4参: P, I, D, F)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0, 0, 0, 0.04))
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.12, 0, 0.01, 0.03))
             .headingPIDFCoefficients(new PIDFCoefficients(0.67, 0, 0.03, 0.02))
 
             // Drive 使用 FilteredPIDF (5参: P, I, D, F, Filter)
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.1, 0, 0.01, 0, 0.8))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0047, 0, 0.00065, 0.8, 0.07))
 
             // --- C. 向心力系数 ---
             .centripetalScaling(0.0); // TODO: 跑 CentripetalForceTuner 后填入
