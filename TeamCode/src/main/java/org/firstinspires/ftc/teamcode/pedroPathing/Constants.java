@@ -21,7 +21,7 @@ public class Constants {
     // 1. 跟随器核心参数 - 【准备进行调参测试】
     // ==============================================================================
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(12.5) // TODO: 物理质量 (kg)
+            .mass(12.5)
 
             // --- A. 零动力摩擦力 (需跑 ZeroPowerTuner) ---
             .forwardZeroPowerAcceleration(-43)
