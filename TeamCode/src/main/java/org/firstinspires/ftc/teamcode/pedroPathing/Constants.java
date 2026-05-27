@@ -29,8 +29,8 @@ public class Constants {
 
             // --- B. 核心 PIDF 调参 (使用 Pedro Pathing 原生类) ---
             // Translational/Heading 使用标准 PIDF (4参: P, I, D, F)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.12, 0, 0.01, 0.03))
-            .headingPIDFCoefficients(new PIDFCoefficients(0.67, 0, 0.032, 0.018))
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.03, 0, 0.002696, 0.045))
+            .headingPIDFCoefficients(new PIDFCoefficients(0.41, 0, 0.01798, 0.033))
 
             // Drive 使用 FilteredPIDF (5参: P, I, D, F, Filter)
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0047, 0, 0.00065, 0.8, 0.07))
