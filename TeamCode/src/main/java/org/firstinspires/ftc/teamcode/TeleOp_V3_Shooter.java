@@ -77,7 +77,7 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
         telemetry.addLine(">> 调试同学注意 (Panel Debugging Guide):");
         telemetry.addLine("   1. 飞轮增重后惯性极大，已取消 Bang-Bang 的 Hold 维持和前馈触发。");
         telemetry.addLine("   2. 补速逻辑：实时 Error >= 80 RPM 则当前帧满功率，否则归还 PIDF。");
-        telemetry.addLine("   3. RB按键：Intake 0.9 正转, Load -0.9 反转 (力学平衡保护舵机)。");
+        telemetry.addLine("   3. RB按键：Intake 0.9 正转, Load -0.2 反转 (力学平衡保护舵机)。");
         telemetry.update();
 
         // 等待裁判按下 Start 键
@@ -326,10 +326,10 @@ public class TeleOp_V3_Shooter extends LinearOpMode {
                 if (gamepad1.right_bumper) {
                     // 💡【精确对齐机械意图 1】：主驾驶单按 RB 捡球。
                     // Intake 正转(0.9)负责源源不断地从地面卷球进入通道；
-                    // Load 通道绝不正转，而是反转(-0.9)进行反向摩擦泄力！
+                    // Load 通道绝不正转，而是反转(-0.2)进行反向摩擦泄力！
                     // 进来的第一颗球推进到大门前时，会在此处形成合力相互抵消的力学平衡，轻柔悬停，绝不卡阻，绝不伤舵机！
                     intakePower = 0.9;
-                    loadPower = -0.9;
+                    loadPower = -0.2;
                     ballTrackStatus = "RB [BALANCED ACCUMULATION]: Intake FW, Load REV";
                 } else if (gamepad1.back) {
                     // 遭遇极端卡沙、卡阻时的紧急全局倒车档位：双路全速反转，向车外全力吐清卡弹
