@@ -8,8 +8,8 @@ public class TeleOp_V3_Final_BLUE extends TeleOp_V3_Final_Base {
     @Override
     public void runOpMode() {
         // 蓝方专属一键对齐度数
-        targetAngleA = 180.0; // 按住 A 键底盘瞬间扭头锁定 180°
-        targetAngleB = -45.0; // 按住 B 键底盘斜向倾斜锁定 -45°
+        targetAngleA = 45.0; // 按住 A 键底盘瞬间定死 45° 近点
+        targetAngleB = 30.0; // 按住 B 键底盘瞬间定死 30° 近点
 
         super.runOpMode();
     }

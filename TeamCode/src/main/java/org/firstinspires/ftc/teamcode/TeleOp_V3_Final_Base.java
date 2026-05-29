@@ -7,7 +7,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class TeleOp_V3_Final_Base extends LinearOpMode {
 
-    // 🌟 底层硬件：继续调用你原本未做修改的 RobotHardwareV3
     protected RobotHardwareV3 robot = new RobotHardwareV3();
     protected IntakeController intakeManager;
     protected ShooterController shooterManager;
@@ -20,13 +19,11 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
     private boolean lastLBState = false;
     private boolean systemActivated = false;
 
-    // 🌟 由红蓝子程序直接写入的场地绝对目标角度
     protected double targetAngleA = 0.0;
     protected double targetAngleB = 0.0;
 
     @Override
     public void runOpMode() {
-        // 1. 初始化底盘与管理类
         robot.init(hardwareMap);
 
         robot.lf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -40,35 +37,25 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            // 🌟 核心：每轮循环刷新 Pinpoint 传感器的寄存器数据
             if (robot.ppointOdo != null) {
                 robot.ppointOdo.update();
             }
 
-            // ===================================================================
-            // ==========      🌟 彻底扔掉 Hub IMU，直接采用 Pinpoint 角度       ==========
-            // ===================================================================
-            double odoHeading = 0.0;
-            double odoX = 0.0;
-            double odoY = 0.0;
-
+            // 1. 面板与自瞄均采用标准的 -180° 到 180° 约束航向
+            double rawHeading = 0.0;
+            double odoX = 0.0; double odoY = 0.0;
             if (robot.ppointOdo != null) {
-                // Pinpoint 弧度转角度，作为全车唯一的绝对航向反馈靶心
-                odoHeading = Math.toDegrees(robot.ppointOdo.getHeading());
+                rawHeading = Math.toDegrees(robot.ppointOdo.getHeading());
                 odoX = robot.ppointOdo.getPosition().getX(DistanceUnit.CM);
                 odoY = robot.ppointOdo.getPosition().getY(DistanceUnit.CM);
             }
+            double odoHeading = normalizeAngle(rawHeading);
 
-            // ===================================================================
-            // ==========         1. 顶级硬隔离安全监控：Back 激活判定          ==========
-            // ===================================================================
             if (gamepad1.back) {
                 systemActivated = true;
             }
 
-            // ===================================================================
-            // ==========    2. 底盘麦轮控制与高精度 $1^\circ$ 死区纯 P 自瞄     ==========
-            // ===================================================================
+            // 2. 高精度 1° 死区纯 P 自瞄
             double rawY = -gamepad1.left_stick_y;
             double rawX = gamepad1.left_stick_x;
             double turn = gamepad1.right_stick_x;
@@ -77,7 +64,6 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             if (Math.abs(rawX) < STICK_DEADZONE) rawX = 0;
             if (Math.abs(turn) < STICK_DEADZONE) turn = 0;
 
-            // 手动推力平方非线性 Expo 曲线
             double driveY = Math.signum(rawY) * (rawY * rawY);
             double driveX = Math.signum(rawX) * (rawX * rawX);
 
@@ -85,42 +71,29 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
 
             if (gamepad1.a || gamepad1.b) {
                 double targetLoc = gamepad1.a ? targetAngleA : targetAngleB;
-
-                // 🌟 核心修正：符号调转修正正反馈（甩头），直接拿 Pinpoint 角度与目标算差值
                 double angleError = normalizeAngle(odoHeading - targetLoc);
                 double absError = Math.abs(angleError);
 
-                // 🌟 高精度像素级锁定：缩短至 ±1.0 度绝对死区，进入后彻底清零，强行断电抱死！
                 if (absError < 1.0) {
                     turn = 0.0;
                     targetLogStatus = String.format("🔒 LOCK [🎯 TARGET: %.1f°]", targetLoc);
                 } else {
-                    // 🌟 回归测试通过的第一版经典纯 P 比例控制
-                    double kp = 0.01;           // 比例系数，上车可根据底盘摩擦阻力做微调
-                    double MAX_TURN_POWER = 0.6; // 最大自瞄转向功率限幅保护
-
+                    double kp = 0.015;
+                    double MAX_TURN_POWER = 0.8;
                     double pPower = angleError * kp;
-
-                    // 限幅输出给底盘转向
                     turn = Math.max(-MAX_TURN_POWER, Math.min(MAX_TURN_POWER, pPower));
                     targetLogStatus = String.format("📉 P-ALIGN [🎯 TARGET: %.1f° | ERR: %.1f°]", targetLoc, angleError);
                 }
             } else {
-                // 松开自瞄，恢复手动操作手完全控制
                 turn = Math.signum(turn) * (turn * turn);
             }
 
-            // 麦轮动力复合解算
             double lfPower = driveY + driveX + turn;
             double rfPower = driveY - driveX - turn;
             double lbPower = driveY - driveX + turn;
             double rbPower = driveY + driveX - turn;
 
-            // 等比例功率限幅
-            double maxChassisPower = Math.max(
-                    Math.max(Math.abs(lfPower), Math.abs(rfPower)),
-                    Math.max(Math.abs(lbPower), Math.abs(rbPower))
-            );
+            double maxChassisPower = Math.max(Math.max(Math.abs(lfPower), Math.abs(rfPower)), Math.max(Math.abs(lbPower), Math.abs(rbPower)));
             if (maxChassisPower > 1.0) {
                 lfPower /= maxChassisPower; rfPower /= maxChassisPower;
                 lbPower /= maxChassisPower; rbPower /= maxChassisPower;
@@ -129,36 +102,31 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             robot.lf.setPower(lfPower); robot.rf.setPower(rfPower);
             robot.lb.setPower(lbPower); robot.rb.setPower(rbPower);
 
-            // ===================================================================
-            // ==========     ⚠️ 3. 未按 Back 挂起挂空挡                        ==========
-            // ===================================================================
+            // 3. 安全挂空挡
             if (!systemActivated) {
-                robot.intake.setPower(0.0);
-                robot.load.setPower(0.0);
-                robot.s1.setPower(0.0);
-                robot.s2.setPower(0.0);
-
-                robot.aservo1.setPosition(0.4);
-                robot.aservo2.setPosition(0.4);
-
-                drawTelemetry(false, "NEUTRAL (空挡挂起)", "WAITING ACTIVATION", targetLogStatus, odoHeading, odoX, odoY);
+                robot.intake.setPower(0.0); robot.load.setPower(0.0);
+                robot.s1.setPower(0.0); robot.s2.setPower(0.0);
+                robot.aservo1.setPosition(0.4); robot.aservo2.setPosition(0.4);
+                drawTelemetry(false, "NEUTRAL", "WAITING ACTIVATION", targetLogStatus, odoHeading, odoX, odoY);
                 continue;
             }
 
-            // ===================================================================
-            // ==========       4. 正常业务控制链（双模分发）                   ==========
-            // ===================================================================
+            // 4. 纯净的业务控制链分发
             boolean currentLBState = gamepad1.left_bumper;
             if (currentLBState && !lastLBState) {
-                driveMode = (driveMode == 0) ? 1 : 0; // 快速切换吸取/发射模式
+                driveMode = (driveMode == 0) ? 1 : 0;
             }
             lastLBState = currentLBState;
 
-            // 挡位控制
-            if (gamepad1.dpad_down) { currentGear = 1; iCurrentPosition = 0.10; }
-            else if (gamepad1.dpad_left) { currentGear = 2; iCurrentPosition = 0.50; }
-            else if (gamepad1.dpad_right) { currentGear = 3; iCurrentPosition = 0.50; }
-            else if (gamepad1.dpad_up) { currentGear = 4; iCurrentPosition = 1.00; }
+            if (gamepad1.dpad_down) currentGear = 1;
+            else if (gamepad1.dpad_left) currentGear = 2;
+            else if (gamepad1.dpad_right) currentGear = 3;
+            else if (gamepad1.dpad_up) currentGear = 4;
+
+            // 舵机挡位映射保持不变
+            if (currentGear == 1) iCurrentPosition = 0.10;
+            else if (currentGear == 2 || currentGear == 3) iCurrentPosition = 0.50;
+            else if (currentGear == 4) iCurrentPosition = 1.00;
 
             robot.iservo1.setPosition(iCurrentPosition);
             robot.iservo2.setPosition(1.0 - iCurrentPosition);
@@ -166,20 +134,28 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             boolean isRTPressed = gamepad1.right_trigger > 0.1;
 
             if (driveMode == 0) {
+                // 吸取模式
                 intakeManager.runIntakeMode();
                 shooterManager.updateShooter(currentGear, false, false);
             } else {
+                // 发射模式：将 RT 键状态丢给 Shooter 独立类，由它内部完成静止拦截与延迟判定
                 intakeManager.stopOrLock(true);
                 shooterManager.updateShooter(currentGear, true, isRTPressed);
+
+                // 🌟 主程序通过查询独立类状态，如果当前不属于物理拦截期，吸取管理器才接管常规动作
+                if (!shooterManager.isIntercepting() && !isRTPressed) {
+                    // 保持非发射状态下的平稳静止
+                    robot.intake.setPower(0.0);
+                    robot.load.setPower(0.0);
+                }
             }
 
             String driveModeStr = (driveMode == 0) ? "📥 INTAKE ACTIVE" : "🚀 SHOOT READY";
-            drawTelemetry(true, driveModeStr, "RUNNING (正常解冻)", targetLogStatus, odoHeading, odoX, odoY);
+            drawTelemetry(true, driveModeStr, "RUNNING", targetLogStatus, odoHeading, odoX, odoY);
         }
     }
 
-    private void drawTelemetry(boolean active, String modeStr, String sysLockStr, String targetLogStatus,
-                               double odoHeading, double odoX, double odoY) {
+    private void drawTelemetry(boolean active, String modeStr, String sysLockStr, String targetLogStatus, double odoHeading, double odoX, double odoY) {
         telemetry.addLine("============ 32477 HIGH PRECISION P-ALIGN Base ============");
         telemetry.addData("★ SYSTEM ACCESS", sysLockStr);
         telemetry.addData("★ DRIVING STATE", modeStr);
@@ -190,6 +166,10 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             telemetry.addData("Intake Status", intakeManager.intakeStatus);
             telemetry.addData("S1 RPM", "%.1f", shooterManager.getShooter1RPM());
             telemetry.addData("S2 RPM", "%.1f", shooterManager.getShooter2RPM());
+            // 🌟 优雅调用：主程序直接向独立类索要计时器状态进行面板输出
+            if (gamepad1.right_trigger > 0.1) {
+                telemetry.addData("🔥 Shoot Intercept Hold", "%.2f / 0.50 s", shooterManager.getShootHoldTime());
+            }
         }
         telemetry.addLine("----------------------------------------------------");
         telemetry.addLine("[🤖 PPOINT ODO SINGLE SOURCE]");
