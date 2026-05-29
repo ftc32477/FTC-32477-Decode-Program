@@ -6,11 +6,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /**
- * 32477 战车手动最终版 - 核心控制基类（子程序目标点绝对闭环版）
- * * 物理纠正：
- * 1. 靶心对齐：angleOffset 严格基于子程序写入的目标角度（targetAngleA / B）与当前车头角度计算差值。
- * 2. 目标点零速：当车头进入子程序指定目标点的 ±5° 舒适区时，速度立即化为 0，依靠物理 BRAKE 锁死。
- * 3. 25%限速：自瞄最大旋转功率死死锁在 0.25 以内，温柔吸入。
+ * 32477 战车手动最终版 - 核心控制基类（纯净手动回归版）
+ * * 变更说明：
+ * 1. 完全移除了 A/B 键的场地绝对角度闭环自瞄逻辑，回归 100% 纯手动摇杆控制。
+ * 2. 保留了底盘的 BRAKE 稳态阻尼特性及完整的安全挂起与双模式切换链。
  */
 public class TeleOp_V3_Final_Base extends LinearOpMode {
 
@@ -28,7 +27,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
     // 顶级安全总闸：必须按下 Back 键触发后，机械子系统才会脱离空挡工作
     private boolean systemActivated = false;
 
-    // 🌟 由红蓝子程序直接写入的场地绝对目标角度
+    // 保留变量声明，防止 RED/BLUE 子程序由于找不到变量而编译报错
     protected double targetAngleA = 0.0;
     protected double targetAngleB = 0.0;
 
@@ -37,7 +36,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
         // 1. 初始化底层硬件映射
         robot.init(hardwareMap);
 
-        // 确保底盘处于 BRAKE 状态，在自瞄修正量归零时保持最高稳态阻尼
+        // 确保底盘处于 BRAKE 状态，在手动摇杆归零时提供最高稳态阻尼
         robot.lf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.rf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.lb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -62,7 +61,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             }
 
             // ===================================================================
-            // ==========         2. 获取实时里程计绝对航向角                     ==========
+            // ==========         2. 获取实时里程计与IMU数据                      ==========
             // ===================================================================
             double rawHubYaw = robot.hubImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
             double rawOdoYaw = 0.0; double odoX = 0.0; double odoY = 0.0;
@@ -73,56 +72,23 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             }
 
             // ===================================================================
-            // ==========     3. 底盘麦轮摇杆控制与子程序目标点高次自瞄融合         ==========
+            // ==========     3. 底盘麦轮摇杆纯手动控制（已移除自瞄）              ==========
             // ===================================================================
             double rawY = -gamepad1.left_stick_y;
             double rawX = gamepad1.left_stick_x;
             double turn = gamepad1.right_stick_x;
 
+            // 摇杆死区过滤
             if (Math.abs(rawY) < STICK_DEADZONE) rawY = 0;
             if (Math.abs(rawX) < STICK_DEADZONE) rawX = 0;
             if (Math.abs(turn) < STICK_DEADZONE) turn = 0;
 
-            // 手动推力平方 Expo 曲线
+            // 手动推力与旋转平滑控制：平方 Expo 曲线，使中低速操控更细腻
             double driveY = Math.signum(rawY) * (rawY * rawY);
             double driveX = Math.signum(rawX) * (rawX * rawX);
+            turn = Math.signum(turn) * (turn * turn);
 
-            String targetLogStatus = "MANUAL TURN";
-
-            if (gamepad1.a || gamepad1.b) {
-                // 🌟 【严格直连子程序目标点】
-                // 如果按下 A 键，直接读取子程序写入的 targetAngleA；如果按下 B 键，直接读取 targetAngleB
-                double targetLoc = gamepad1.a ? targetAngleA : targetAngleB;
-
-                // 🌟 用写入的目标点直接作为算差值的终点！
-                double angleOffset = normalizeAngle(targetLoc - rawOdoYaw);
-                double absOffset = Math.abs(angleOffset);
-
-                if (absOffset < 5.0) {
-                    // 🌟 只要进入子程序写入的目标值正负 5 度以内，无条件彻底断电！
-                    // 这就是你指定的真正的“目标值零功率点”
-                    turn = 0.0;
-                    targetLogStatus = String.format("🔒 [🎯 ARRIVED TARGET: %.1f°]", targetLoc);
-                } else {
-                    // 🌟 高次渐进软着陆：以子程序写入的目标点 ±5° 为绝对零动力起点
-                    double cappedOffset = Math.min(absOffset, 90.0);
-                    // 归一化映射到 5° 到 90°
-                    double normalizedX = (cappedOffset - 5.0) / (90.0 - 5.0);
-
-                    // 3次曲线：越接近写入的目标值，速度死得越快，在 15° 左右功率只剩 1.5% 的极微弱爬行力
-                    double cubicFactor = normalizedX * normalizedX * normalizedX;
-
-                    // 限制自瞄最大辅助速度绝对不超过满速的 25% (0.25)
-                    double adaptiveCorrection = cubicFactor * 0.25;
-
-                    // 结合方向赋予底盘
-                    turn = Math.signum(angleOffset) * adaptiveCorrection;
-                    targetLogStatus = String.format("📉 [ALIGNING TO: %.1f° | POW: %.1f%%]", targetLoc, adaptiveCorrection * 100);
-                }
-            } else {
-                // 松开自瞄键，操作手右摇杆重新获得 100% 自由旋转大功率
-                turn = Math.signum(turn) * (turn * turn);
-            }
+            String targetLogStatus = "MANUAL CONTROL";
 
             // 麦轮动力复合解算
             double lfPower = driveY + driveX + turn;
@@ -130,7 +96,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             double lbPower = driveY - driveX + turn;
             double rbPower = driveY + driveX - turn;
 
-            // 等比例限幅
+            // 等比例限幅（防止复合计算后功率绝对值超过 1.0 导致动作失真）
             double maxChassisPower = Math.max(
                     Math.max(Math.abs(lfPower), Math.abs(rfPower)),
                     Math.max(Math.abs(lbPower), Math.abs(rbPower))
@@ -193,10 +159,10 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
 
     private void drawTelemetry(boolean active, String modeStr, String sysLockStr, String targetLogStatus,
                                double rawHubYaw, double rawOdoYaw, double odoX, double odoY) {
-        telemetry.addLine("============ 32477 ABSOLUTE TARGET INTERFACE ============");
+        telemetry.addLine("============ 32477 PURE MANUAL INTERFACE ============");
         telemetry.addData("★ SYSTEM ACCESS", sysLockStr);
         telemetry.addData("★ DRIVING STATE", modeStr);
-        telemetry.addData("Chassis Lock Status", targetLogStatus);
+        telemetry.addData("Chassis Mode", targetLogStatus);
         telemetry.addLine("----------------------------------------------------");
 
         if (active) {
@@ -213,11 +179,5 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
         telemetry.addData(" -> Pinpoint Heading", "%.2f °", rawOdoYaw);
         telemetry.addData(" -> Local Position", "X: %.1f cm | Y: %.1f cm", odoX, odoY);
         telemetry.update();
-    }
-
-    private double normalizeAngle(double angle) {
-        while (angle >= 180.0) angle -= 360.0;
-        while (angle < -180.0) angle += 360.0;
-        return angle;
     }
 }
