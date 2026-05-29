@@ -27,7 +27,7 @@ public class ShooterController {
     // ===================================================================
     private final PIDFCoefficients PIDF_IDLE_COMMON = new PIDFCoefficients(13.2, 0, 0.5, 17.0);
     private final PIDFCoefficients PIDF_GEAR_1 = new PIDFCoefficients(13.2, 0.0, 0.1, 23.7);
-    private final PIDFCoefficients PIDF_GEAR_2 = new PIDFCoefficients(13.0, 0.0, 0.2, 22.8);
+    private final PIDFCoefficients PIDF_GEAR_2 = new PIDFCoefficients(13.0, 0.0, 0.2, 20.0);
     private final PIDFCoefficients PIDF_GEAR_3 = new PIDFCoefficients(18.1, 0.0, 0.1, 22.6);
     private final PIDFCoefficients PIDF_GEAR_4 = new PIDFCoefficients(18.5, 0.0, 0.5, 22.0);
 
@@ -45,7 +45,7 @@ public class ShooterController {
     private final double GEAR_4_ANGLE = 1.00;
 
     private final double BANGBANG_TRIGGER_THRESHOLD = 50.0;
-    private final double RPM_TOLERANCE_LOWER = 30.0;
+    private final double RPM_TOLERANCE_LOWER = 50.0;
     private final double RPM_TOLERANCE_UPPER = 150.0;
     private final double SERVO_OPEN_DELAY_SEC = 0.5; // 舵机完全打开所需的延时时间（秒）
 
