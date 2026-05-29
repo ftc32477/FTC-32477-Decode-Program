@@ -12,7 +12,6 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
     protected ShooterController shooterManager;
 
     private int currentGear = 1;
-    private double iCurrentPosition = 0.5;
     private final double STICK_DEADZONE = 0.08;
 
     private int driveMode = 0;
@@ -123,28 +122,18 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             else if (gamepad1.dpad_right) currentGear = 3;
             else if (gamepad1.dpad_up) currentGear = 4;
 
-            // 舵机挡位映射保持不变
-            if (currentGear == 1) iCurrentPosition = 0.10;
-            else if (currentGear == 2 || currentGear == 3) iCurrentPosition = 0.50;
-            else if (currentGear == 4) iCurrentPosition = 1.00;
-
-            robot.iservo1.setPosition(iCurrentPosition);
-            robot.iservo2.setPosition(1.0 - iCurrentPosition);
-
             boolean isRTPressed = gamepad1.right_trigger > 0.1;
 
             if (driveMode == 0) {
-                // 吸取模式
+                // 吸取模式：关闭发射内核，但俯仰舵机仍在此行代码中根据 currentGear 实时改变角度
                 intakeManager.runIntakeMode();
                 shooterManager.updateShooter(currentGear, false, false);
             } else {
-                // 发射模式：将 RT 键状态丢给 Shooter 独立类，由它内部完成静止拦截与延迟判定
+                // 发射模式：高能起旋并接管发射逻辑
                 intakeManager.stopOrLock(true);
                 shooterManager.updateShooter(currentGear, true, isRTPressed);
 
-                // 🌟 主程序通过查询独立类状态，如果当前不属于物理拦截期，吸取管理器才接管常规动作
                 if (!shooterManager.isIntercepting() && !isRTPressed) {
-                    // 保持非发射状态下的平稳静止
                     robot.intake.setPower(0.0);
                     robot.load.setPower(0.0);
                 }
@@ -166,7 +155,6 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             telemetry.addData("Intake Status", intakeManager.intakeStatus);
             telemetry.addData("S1 RPM", "%.1f", shooterManager.getShooter1RPM());
             telemetry.addData("S2 RPM", "%.1f", shooterManager.getShooter2RPM());
-            // 🌟 优雅调用：主程序直接向独立类索要计时器状态进行面板输出
             if (gamepad1.right_trigger > 0.1) {
                 telemetry.addData("🔥 Shoot Intercept Hold", "%.2f / 0.50 s", shooterManager.getShootHoldTime());
             }
