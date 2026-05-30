@@ -1,14 +1,21 @@
+官方应用库
 org.firstinspires.ftc.teamcode.pedroPathing.Constants
 org.firstinspires.ftc.teamcode.GoBildaPinpointDriver
 
+车辆基础架构
 org.firstinspires.ftc.teamcode.RobotHardwareV3
 org.firstinspires.ftc.teamcode.IntakeController
 org.firstinspires.ftc.teamcode.ShooterController
 
+手动程序
 org.firstinspires.ftc.teamcode.TeleOp_V3_Final_Base
 
+手动程序
 org.firstinspires.ftc.teamcode.TeleOp_V3_Final_BLUE
 org.firstinspires.ftc.teamcode.TeleOp_V3_Final_RED
+
+自动程序
+org.firstinspires.ftc.teamcode.PedroAutonomous_mzk
 
 
 6.7 56.8
