@@ -22,6 +22,21 @@ public class IntakeController {
     }
 
     /**
+     * ✨【新增】重载构造函数：专门无缝兼容自动程序硬件类
+     */
+    public IntakeController(RobotHardwareV3_Auto hardware) {
+        // 1. 创建一个干净的 V3 外壳，完美隔离底盘动力轮，防止控制权抢夺
+        this.robot = new RobotHardwareV3();
+
+        // 2. 将自动程序里在 hwMap 中绑定好的拾取机构指针无缝转移过来
+        this.robot.intake = hardware.intake;
+        this.robot.load = hardware.load;
+
+        // 3. 正常重置内部时钟
+        shuffleTimer.reset();
+    }
+
+    /**
      * 激活常态吸球与定时揉球逻辑（模式一：吸球模式）
      */
     public void runIntakeMode() {

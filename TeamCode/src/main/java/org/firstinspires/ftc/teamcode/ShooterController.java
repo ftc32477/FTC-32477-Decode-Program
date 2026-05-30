@@ -65,6 +65,24 @@ public class ShooterController {
     }
 
     /**
+     * ✨【新增】重载构造函数：专门无缝兼容自动程序硬件类
+     */
+    public ShooterController(RobotHardwareV3_Auto hardware) {
+        // 1. 创建干净的 V3 外壳，它会天然继承父类声明的 SHOOTER_TICKS_PER_REV = 28.0 物理常数
+        this.robot = new RobotHardwareV3();
+
+        // 2. 批量将自动硬件类中初始化完毕的飞轮、舵机及弹道马达指针转移进外壳
+        this.robot.s1 = hardware.s1;
+        this.robot.s2 = hardware.s2;
+        this.robot.aservo1 = hardware.aservo1;
+        this.robot.aservo2 = hardware.aservo2;
+        this.robot.iservo1 = hardware.iservo1;
+        this.robot.iservo2 = hardware.iservo2;
+        this.robot.intake = hardware.intake;
+        this.robot.load = hardware.load;
+    }
+
+    /**
      * 智能复合发射闭环与推弹状态机
      */
     public void updateShooter(int gear, boolean requestSpinUp, boolean requestFire) {

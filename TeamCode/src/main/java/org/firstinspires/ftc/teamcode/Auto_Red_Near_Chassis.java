@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Auto_Blue_Near_Chassis", group = "Autonomous")
-public class Auto_Blue_Near_Chassis extends LinearOpMode {
+@Autonomous(name = "Auto_Red_Near_Chassis", group = "Autonomous")
+public class Auto_Red_Near_Chassis extends LinearOpMode {
 
     public Follower follower;
     private RobotHardwareV3_Auto robot = new RobotHardwareV3_Auto(); // 仅保留底层硬件映射避免底盘报错
@@ -23,29 +23,29 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
     private final double POS_TOLERANCE = 2.0;
 
     // =============================================================================
-    // 📍 严格提取自 .pp 文件的基础坐标点配置
+    // 📍 严格提取自 Auto_Red_Near.pp 文件的红方镜像坐标点配置
     // =============================================================================
-    private final Pose startPose     = new Pose(20.250, 119.500, Math.toRadians(143.0));
-    private final Pose shootPose1    = new Pose(40.000, 101.000, Math.toRadians(135.0));
+    private final Pose startPose     = new Pose(123.750, 119.500, Math.toRadians(37.0));  // 144 - 20.25,  180 - 143
+    private final Pose shootPose1    = new Pose(104.000, 101.000, Math.toRadians(45.0));  // 144 - 40.00,  180 - 135
 
-    private final Pose p2_control    = new Pose(60.000, 82.000,  0);
-    private final Pose p2_end        = new Pose(40.000, 82.000,  Math.toRadians(180.0));
-    private final Pose p3_end        = new Pose(15.000, 82.000,  Math.toRadians(180.0));
+    private final Pose p2_control    = new Pose(84.000,  82.000,  0);                     // 144 - 60.00
+    private final Pose p2_end        = new Pose(104.000, 82.000,  Math.toRadians(0.0));   // 144 - 40.00,  180 - 180
+    private final Pose p3_end        = new Pose(129.000, 82.000,  Math.toRadians(0.0));   // 144 - 15.00,  180 - 180
 
-    private final Pose p5_control    = new Pose(60.000, 60.000,  0);
-    private final Pose p5_end        = new Pose(40.000, 60.000,  Math.toRadians(180.0));
-    private final Pose p6_end        = new Pose(10.000, 60.000,  Math.toRadians(180.0));
-    private final Pose p7_control    = new Pose(36.000, 48.000,  0);
+    private final Pose p5_control    = new Pose(84.000,  60.000,  0);                     // 144 - 60.00
+    private final Pose p5_end        = new Pose(104.000, 60.000,  Math.toRadians(0.0));   // 144 - 40.00,  180 - 180
+    private final Pose p6_end        = new Pose(134.000, 60.000,  Math.toRadians(0.0));   // 144 - 10.00,  180 - 180
+    private final Pose p7_control    = new Pose(108.000, 48.000,  0);                     // 144 - 36.00
 
-    private final Pose p8_control    = new Pose(72.000, 36.000,  0);
-    private final Pose p8_end        = new Pose(40.000, 36.000,  Math.toRadians(180.0));
-    private final Pose p9_end        = new Pose(10.000, 36.000,  Math.toRadians(180.0));
-    private final Pose waitPose2     = new Pose(60.000, 12.000,  Math.toRadians(117.0));
+    private final Pose p8_control    = new Pose(72.000,  36.000,  0);                     // 144 - 72.00
+    private final Pose p8_end        = new Pose(104.000, 36.000,  Math.toRadians(0.0));   // 144 - 40.00,  180 - 180
+    private final Pose p9_end        = new Pose(134.000, 36.000,  Math.toRadians(0.0));   // 144 - 10.00,  180 - 180
+    private final Pose waitPose2     = new Pose(84.000,  12.000,  Math.toRadians(63.0));  // 144 - 60.00,  180 - 117
 
-    private final Pose endPose       = new Pose(60.000, 36.000,  Math.toRadians(90.0));
+    private final Pose endPose       = new Pose(84.000,  36.000,  Math.toRadians(90.0));  // 144 - 60.00,  180 - 90
 
     // =============================================================================
-    // 🗺️ 拆分为 .pp 文件对应的最小原子路径单位
+    // 🗺️ 拆分为 .pp 文件对应的红方最小原子路径单位
     // =============================================================================
     private PathChain path1, path2, path3, path4, path5, path6, path7, path8, path9, path10, path11;
 
@@ -54,14 +54,14 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
         // 初始化底盘所需的硬件接口
         robot.init(hardwareMap);
 
-        // 🌟 直接引用并绑定 Constants 测量出的高精度 PIDF 参数与物理限制
+        // 直接引用并绑定 Constants 测量出的高精度 PIDF 参数与物理限制
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startPose);
 
-        // 构建最小单位路径链
+        // 构建红方原子路径链
         buildGranularPaths();
 
-        telemetry.addLine("📌 【原子级纯底盘路径程序】解耦就绪，等待发车...");
+        telemetry.addLine("📌 【红方原子级纯底盘路径程序】镜像换算就绪...");
         telemetry.update();
 
         waitForStart();
@@ -73,7 +73,7 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
             autonomousChassisUpdate(); // 驱动原子状态机
 
             // ===================================================================
-            // 🎯 实时路径颗粒化解算看板（Telemetry）
+            // 🎯 红方实时路径颗粒化解算看板（Telemetry）
             // ===================================================================
             String currentStage = "未知状态";
             String targetPointName = "无";
@@ -81,7 +81,7 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
             boolean isWaitingState = false;
 
             switch (pathState) {
-                case 0:  currentStage = "准备发车"; targetPointName = "起点"; targetPose = startPose; break;
+                case 0:  currentStage = "准备发车"; targetPointName = "红方起点"; targetPose = startPose; break;
                 case 1:  currentStage = "正在执行 Path 1 (前往首发点)"; targetPointName = "shootPose1"; targetPose = shootPose1; break;
                 case 2:  currentStage = "🛑 模拟第 1 次发射等待周期"; targetPointName = "原地静止"; targetPose = shootPose1; isWaitingState = true; break;
                 case 3:  currentStage = "正在执行 Path 2 (绕行推球点1)"; targetPointName = "p2_end"; targetPose = p2_end; break;
@@ -97,19 +97,18 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
                 case 13: currentStage = "正在执行 Path 10 (开往底线战术中转点)"; targetPointName = "waitPose2"; targetPose = waitPose2; break;
                 case 14: currentStage = "🛑 模拟中转点静态战术等待"; targetPointName = "原地中转"; targetPose = waitPose2; isWaitingState = true; break;
                 case 15: currentStage = "正在执行 Path 11 (最终收尾冲刺停靠)"; targetPointName = "endPose"; targetPose = endPose; break;
-                default: currentStage = "🏁 纯底盘轨迹位移测试全部安全结束"; targetPointName = "终点"; targetPose = endPose; break;
+                default: currentStage = "🏁 红方纯底盘轨迹位移测试全部安全结束"; targetPointName = "终点"; targetPose = endPose; break;
             }
 
             Pose currentPose = follower.getPose();
             double distanceError = Math.hypot(currentPose.getX() - targetPose.getX(), currentPose.getY() - targetPose.getY());
 
-            // 文本输出到司机站屏幕
-            telemetry.addLine("============ 📍 32477 里程计真实定位 ============");
+            telemetry.addLine("============ 🔴 32477 红方里程计实时定位 ============");
             telemetry.addData("真实坐标 X", "%.2f 英寸", currentPose.getX());
             telemetry.addData("真实坐标 Y", "%.2f 英寸", currentPose.getY());
             telemetry.addData("真实朝向 Heading", "%.1f°", Math.toDegrees(currentPose.getHeading()));
 
-            telemetry.addLine("\n============ 🎯 .pp 原子单位路径实时汇报 ============");
+            telemetry.addLine("\n============ 🎯 红方 .pp 原子单位路径实时汇报 ============");
             telemetry.addData("当前状态机编码", "State [%d]", pathState);
             telemetry.addData("当前运行段描述", currentStage);
             telemetry.addData("当前追逐目标点", targetPointName);
@@ -127,7 +126,7 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
     }
 
     // =============================================================================
-    // 🛠️ 原子路径构建函数：严格拆解 .pp 文件中的最小路径单位，不进行任何合并
+    // 🛠️ 原子路径构建函数：严格拆解红方 .pp 文件中的最小路径单位，不进行任何合并
     // =============================================================================
     public void buildGranularPaths() {
 
@@ -204,7 +203,7 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
     }
 
     // =============================================================================
-    // 🔄 原子级状态机流转控制（双重安全闭环判定：物理公差收敛 OR 底盘动力停止）
+    // 🔄 原子级状态机流转控制
     // =============================================================================
     public void autonomousChassisUpdate() {
         switch (pathState) {
@@ -213,107 +212,107 @@ public class Auto_Blue_Near_Chassis extends LinearOpMode {
                 pathState = 1;
                 break;
 
-            case 1: // 追逐 shootPose1
+            case 1:
                 if (hasReached(shootPose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入第 1 次时间保留周期
+                    stateTimer.reset();
                     pathState = 2;
                 }
                 break;
 
-            case 2: // ⏱️ 精确保留 3 秒等待
+            case 2:
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path2);
                     pathState = 3;
                 }
                 break;
 
-            case 3: // 追逐 p2_end
+            case 3:
                 if (hasReached(p2_end) || !follower.isBusy()) {
                     follower.followPath(path3);
                     pathState = 4;
                 }
                 break;
 
-            case 4: // 追逐 p3_end
+            case 4:
                 if (hasReached(p3_end) || !follower.isBusy()) {
                     follower.followPath(path4);
                     pathState = 5;
                 }
                 break;
 
-            case 5: // 返回 shootPose1
+            case 5:
                 if (hasReached(shootPose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入第 2 次时间保留周期
+                    stateTimer.reset();
                     pathState = 6;
                 }
                 break;
 
-            case 6: // ⏱️ 精确保留 3 秒等待
+            case 6:
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path5);
                     pathState = 7;
                 }
                 break;
 
-            case 7: // 追逐 p5_end
+            case 7:
                 if (hasReached(p5_end) || !follower.isBusy()) {
                     follower.followPath(path6);
                     pathState = 8;
                 }
                 break;
 
-            case 8: // 追逐 p6_end
+            case 8:
                 if (hasReached(p6_end) || !follower.isBusy()) {
                     follower.followPath(path7);
                     pathState = 9;
                 }
                 break;
 
-            case 9: // 返回 shootPose1
+            case 9:
                 if (hasReached(shootPose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入第 3 次时间保留周期
+                    stateTimer.reset();
                     pathState = 10;
                 }
                 break;
 
-            case 10: // ⏱️ 精确保留 3 秒等待
+            case 10:
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path8);
                     pathState = 11;
                 }
                 break;
 
-            case 11: // 追逐 p8_end
+            case 11:
                 if (hasReached(p8_end) || !follower.isBusy()) {
                     follower.followPath(path9);
                     pathState = 12;
                 }
                 break;
 
-            case 12: // 追逐 p9_end
+            case 12:
                 if (hasReached(p9_end) || !follower.isBusy()) {
                     follower.followPath(path10);
                     pathState = 13;
                 }
                 break;
 
-            case 13: // 前往战术中转点 waitPose2
+            case 13:
                 if (hasReached(waitPose2) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入中转停留周期
+                    stateTimer.reset();
                     pathState = 14;
                 }
                 break;
 
-            case 14: // ⏱️ 中转点停留 3 秒
+            case 14:
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path11);
                     pathState = 15;
                 }
                 break;
 
-            case 15: // 前往终点 endPose
+            case 15:
                 if (hasReached(endPose) || !follower.isBusy()) {
-                    pathState = -1; // 结束自动
+                    pathState = -1;
                 }
                 break;
         }

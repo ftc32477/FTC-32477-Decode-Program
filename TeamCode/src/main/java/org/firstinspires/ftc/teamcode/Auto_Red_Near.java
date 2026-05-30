@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Auto_Blue_Near", group = "Autonomous")
-public class Auto_Blue_Near extends LinearOpMode {
+@Autonomous(name = "Auto_Red_Near", group = "Autonomous")
+public class Auto_Red_Near extends LinearOpMode {
 
     public Follower follower;
     // 更换为完整硬件映射类，以兼容 Intake 和 Shooter 控制器
@@ -38,24 +38,24 @@ public class Auto_Blue_Near extends LinearOpMode {
     // =============================================================================
     // 📍 严格提取自 Auto_Blue_Near.pp 文件的基础坐标点配置
     // =============================================================================
-    private final Pose startPose     = new Pose(20.250, 119.500, Math.toRadians(143.0));
-    private final Pose shootPose1    = new Pose(40.000, 101.000, Math.toRadians(135.0));
+    private final Pose startPose     = new Pose(123.750, 119.500, Math.toRadians(37.0));
+    private final Pose shootPose1    = new Pose(104.000, 101.000, Math.toRadians(45.0));
 
-    private final Pose p2_control    = new Pose(60.000, 82.000,  0);
-    private final Pose p2_end        = new Pose(40.000, 82.000,  Math.toRadians(180.0));
-    private final Pose p3_end        = new Pose(15.000, 82.000,  Math.toRadians(180.0));
+    private final Pose p2_control    = new Pose(84.000, 82.000,  0);
+    private final Pose p2_end        = new Pose(104.000, 82.000,  Math.toRadians(0.0));
+    private final Pose p3_end        = new Pose(128.800, 82.000,  Math.toRadians(0.0));
 
-    private final Pose p5_control    = new Pose(60.000, 60.000,  0);
-    private final Pose p5_end        = new Pose(40.000, 60.000,  Math.toRadians(180.0));
-    private final Pose p6_end        = new Pose(10.000, 60.000,  Math.toRadians(180.0));
-    private final Pose p7_control    = new Pose(36.000, 48.000,  0);
+    private final Pose p5_control    = new Pose(84.000, 60.000,  0);
+    private final Pose p5_end        = new Pose(104.000, 60.000,  Math.toRadians(0.0));
+    private final Pose p6_end        = new Pose(134.000, 60.000,  Math.toRadians(0.0));
+    private final Pose p7_control    = new Pose(108.000, 48.000,  0);
 
     private final Pose p8_control    = new Pose(72.000, 36.000,  0);
-    private final Pose p8_end        = new Pose(40.000, 36.000,  Math.toRadians(180.0));
-    private final Pose p9_end        = new Pose(10.000, 36.000,  Math.toRadians(180.0));
-    private final Pose waitPose2     = new Pose(60.000, 12.000,  Math.toRadians(117.0));
+    private final Pose p8_end        = new Pose(104.000, 36.000,  Math.toRadians(0.0));
+    private final Pose p9_end        = new Pose(134.000, 36.000,  Math.toRadians(0.0));
+    private final Pose waitPose2     = new Pose(84.000, 12.000,  Math.toRadians(63.0));
 
-    private final Pose endPose       = new Pose(60.000, 36.000,  Math.toRadians(90.0));
+    private final Pose endPose       = new Pose(84.000, 36.000,  Math.toRadians(90.0));
 
     // =============================================================================
     // 🗺️ 拆分为 .pp 文件对应的最小原子路径单位
