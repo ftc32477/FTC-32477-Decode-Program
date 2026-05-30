@@ -30,7 +30,7 @@ public class Auto_Blue_Near extends LinearOpMode {
     // =============================================================================
     // 🎛️ 机构异步控制底层状态旗标（绝不阻塞底盘循环）
     // =============================================================================
-    private int shooterGear = 2;
+    private int shooterGear = 4;
     private boolean requestSpinUp = false;
     private boolean requestFire = false;
     private boolean requestIntake = false;

@@ -30,7 +30,7 @@ public class Auto_Red_Far extends LinearOpMode {
     // =============================================================================
     // 🎛️ 机构异步控制底层状态旗标（与 Near 对应关系完全一致）
     // =============================================================================
-    private int shooterGear = 2;
+    private int shooterGear = 4;
     private boolean requestSpinUp = false;
     private boolean requestFire = false;
     private boolean requestIntake = false;
@@ -182,18 +182,17 @@ public class Auto_Red_Far extends LinearOpMode {
 
         path3 = follower.pathBuilder()
                 .addPath(new BezierLine(pose2, pose3))
-                .setConstantHeadingInterpolation(pose2.getHeading())
+                .setLinearHeadingInterpolation(pose2.getHeading(), pose3.getHeading())
                 .build();
 
         path4 = follower.pathBuilder()
                 .addPath(new BezierLine(pose3, pose4))
-                .setConstantHeadingInterpolation(pose3.getHeading())
-                .setReversed()
+                .setLinearHeadingInterpolation(pose3.getHeading(), pose4.getHeading())
                 .build();
 
         path7 = follower.pathBuilder()
                 .addPath(new BezierLine(pose4, pose7))
-                .setConstantHeadingInterpolation(pose4.getHeading())
+                .setLinearHeadingInterpolation(pose4.getHeading(), pose7.getHeading())
                 .build();
 
         path8 = follower.pathBuilder()

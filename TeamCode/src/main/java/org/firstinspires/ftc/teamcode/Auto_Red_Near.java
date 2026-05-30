@@ -30,7 +30,7 @@ public class Auto_Red_Near extends LinearOpMode {
     // =============================================================================
     // 🎛️ 机构异步控制底层状态旗标（绝不阻塞底盘循环）
     // =============================================================================
-    private int shooterGear = 2;
+    private int shooterGear = 4;
     private boolean requestSpinUp = false;
     private boolean requestFire = false;
     private boolean requestIntake = false;
@@ -50,12 +50,12 @@ public class Auto_Red_Near extends LinearOpMode {
     private final Pose p6_end        = new Pose(134.000, 60.000,  Math.toRadians(0.0));
     private final Pose p7_control    = new Pose(108.000, 48.000,  0);
 
-    private final Pose p8_control    = new Pose(72.000, 36.000,  0);
-    private final Pose p8_end        = new Pose(104.000, 36.000,  Math.toRadians(0.0));
+    private final Pose p8_control    = new Pose(48.000, 36.000,  0);
+    private final Pose p8_end        = new Pose(134.000, 36.000,  Math.toRadians(0.0));
     private final Pose p9_end        = new Pose(134.000, 36.000,  Math.toRadians(0.0));
-    private final Pose waitPose2     = new Pose(84.000, 12.000,  Math.toRadians(63.0));
+    private final Pose waitPose2     = new Pose(92.000, 11.000,  Math.toRadians(63.0));
 
-    private final Pose endPose       = new Pose(84.000, 36.000,  Math.toRadians(90.0));
+    private final Pose endPose       = new Pose(86.000, 36.000,  Math.toRadians(90.0));
 
     // =============================================================================
     // 🗺️ 拆分为 .pp 文件对应的最小原子路径单位
