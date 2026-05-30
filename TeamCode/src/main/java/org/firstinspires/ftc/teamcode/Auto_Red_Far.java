@@ -36,14 +36,14 @@ public class Auto_Red_Far extends LinearOpMode {
     private boolean requestIntake = false;
 
     // =============================================================================
-    // 📍 严格提取自 Auto_Blue_Far.pp 文件的真实路径坐标点配置
+    // 📍 严格提取自 Auto_Red_Far.pp 文件的真实路径坐标点配置
     // =============================================================================
     private final Pose startPose = new Pose(89.3, 8.8,  Math.toRadians(90.0));
     private final Pose pose1     = new Pose(84.0, 12.0, Math.toRadians(60.0));
     private final Pose pose2     = new Pose(111.2, 6.7,  Math.toRadians(0.0));
-    private final Pose pose3     = new Pose(134.0, 6.7,  Math.toRadians(0.0));
+    private final Pose pose3     = new Pose(132.0, 6.7,  Math.toRadians(0.0));
     private final Pose pose4     = new Pose(129.0, 6.7,  Math.toRadians(0.0));
-    private final Pose pose7     = new Pose(134.0, 6.7,  Math.toRadians(0.0));
+    private final Pose pose7     = new Pose(132.0, 6.7,  Math.toRadians(0.0));
     private final Pose pose8     = new Pose(84.0, 12.0, Math.toRadians(60.0));
     private final Pose pose9     = new Pose(137.3,  8.8,  Math.toRadians(90.0));
 
@@ -93,7 +93,7 @@ public class Auto_Red_Far extends LinearOpMode {
         // ===================================================================
         while (!isStarted() && !isStopRequested()) {
             // 🛑 已移除 shooterController.updateShooter 避免开赛前激活飞轮或推弹微调
-            telemetry.addLine("📌 【远端蓝方】32477 状态机就绪，等待正式发车...");
+            telemetry.addLine("📌 【远端红方】32477 状态机就绪，等待正式发车...");
             telemetry.addLine("💡 提示：发射机构已进入静默保护，将在正式启动后激活。");
             telemetry.update();
         }

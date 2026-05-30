@@ -104,7 +104,7 @@ public class Auto_Blue_Near extends LinearOpMode {
         // ===================================================================
         while (!isStarted() && !isStopRequested()) {
             // 🛑 已移除 shooterController.updateShooter 避免开赛前激活飞轮或推弹微调
-            telemetry.addLine("📌 【自动程序】32477 状态机就绪，等待正式发车...");
+            telemetry.addLine("📌 【近端蓝方】32477 状态机就绪，等待正式发车...");
             telemetry.addLine("💡 提示：发射机构已进入静默保护，将在正式启动后激活。");
             telemetry.update();
         }

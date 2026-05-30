@@ -36,7 +36,7 @@ public class Auto_Red_Near extends LinearOpMode {
     private boolean requestIntake = false;
 
     // =============================================================================
-    // 📍 严格提取自 Auto_Blue_Near.pp 文件的基础坐标点配置
+    // 📍 严格提取自 Auto_Red_Near.pp 文件的基础坐标点配置
     // =============================================================================
     private final Pose startPose     = new Pose(123.750, 119.500, Math.toRadians(37.0));
     private final Pose shootPose1    = new Pose(104.000, 101.000, Math.toRadians(45.0));
