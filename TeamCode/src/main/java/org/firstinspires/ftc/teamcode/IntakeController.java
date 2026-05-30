@@ -45,14 +45,14 @@ public class IntakeController {
         // Intake 常开吸球功率
         robot.intake.setPower(0.9);
 
-        // 5秒揉球循环状态机：前 4.5秒 反转蓄球，后 0.5秒 正转把末端球向里微送
+        // 5秒揉球循环状态机：前 2.5秒 反转蓄球，后 0.5秒 正转把末端球向里微送
         double cycleTime = shuffleTimer.seconds();
-        if (cycleTime >= 5.0) {
+        if (cycleTime >= 3.0) {
             shuffleTimer.reset();
             cycleTime = 0.0;
         }
 
-        if (cycleTime < 4.5) {
+        if (cycleTime < 2.5) {
             robot.load.setPower(-0.9); // 阻尼反转蓄球
             intakeStatus = "📥 INTAKE [蓄球反转维持中]";
         } else {
