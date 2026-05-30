@@ -6,13 +6,22 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
  * 32477 Shooter 核心控制类 - 智能挡位融合与喂弹回馈版
- * 专注于飞轮闭环轮速、物理大门开闸、物理俯仰角绑定，以及【新增】高精度喂弹状态回馈函数
+ * 专注于飞轮闭环轮速、物理大门开闸、物理俯仰角绑定，以及高精度喂弹状态回馈函数
  */
 public class ShooterController {
 
     private RobotHardwareV3 robot;
     private ElapsedTime servoOpenTimer = new ElapsedTime(); // 用于舵机完全打开的0.5秒延时计时
     private boolean wasRTPressedLastFrame = false;          // 记录上一帧RT状态，用于捕捉边缘触发
+
+    // ===================================================================
+    // 📌 核心修复 1：按照 1:1 的 5203 电机，直接内联折合常数，解决变量缺失
+    // ===================================================================
+    private final double SHOOTER_TICKS_PER_REV = 25.0;
+
+    // 用于状态机解耦的成员变量，对接 TeleOp 时可通过 setter 改变
+    private int gear = 1;
+    private boolean requestSpinUp = false;
 
     // 发射子状态机定义
     private enum FiringState {
@@ -58,21 +67,61 @@ public class ShooterController {
 
     // 内部控制链状态旗标
     private boolean interceptingFlag = false;
-    private boolean feedingActiveFlag = false; // 【新增】喂弹激活状态标志位
+    private boolean feedingActiveFlag = false; // 喂弹激活状态标志位
 
     public ShooterController(RobotHardwareV3 hardware) {
         this.robot = hardware;
     }
 
     /**
-     * 智能复合发射闭环与推弹状态机
+     * 兼容旧版：智能复合发射闭环与推弹状态机
+     * 内部自动路由至新的 runIdleMode 和 runFireMode 流程
      */
     public void updateShooter(int gear, boolean requestSpinUp, boolean requestFire) {
+        this.gear = gear;
+        this.requestSpinUp = requestSpinUp;
+
+        if (!requestSpinUp && !requestFire) {
+            runIdleMode();
+        } else {
+            runFireMode(requestFire);
+        }
+    }
+
+    /**
+     * 📌 核心修复 2：补齐独立闲置/怠速接口（对应模式一：吸球模式时的飞轮状态）
+     */
+    public void runIdleMode() {
+        if (robot == null || robot.s1 == null || robot.s2 == null) return;
+
+        // 飞轮停转或保持低速怠速
+        robot.s1.setPower(0.0);
+        robot.s2.setPower(0.0);
+
+        // 发射大门物理关闭
+        if (robot.aservo1 != null && robot.aservo2 != null) {
+            robot.aservo1.setPosition(0.4);
+            robot.aservo2.setPosition(0.4);
+        }
+
+        // 重置内部开火状态机
+        currentFiringState = FiringState.READY_TO_START;
+        interceptingFlag = false;
+        feedingActiveFlag = false;
+        shooterTrackStatus = "STANDBY / IDLE";
+        isFirstAcceleration = true;
+    }
+
+    /**
+     * 📌 核心修复 3：将原本的控制主体封装进此方法，对接 TeleOp 主程序
+     * @param requestFire 手柄 RT 触发信号 (gamepad1.right_trigger > 0.15)
+     */
+    public void runFireMode(boolean requestFire) {
         if (robot == null || robot.s1 == null || robot.s2 == null) return;
 
         // --- 1. 挡位映射 ---
         double targetRPM; double currentGearIdle; PIDFCoefficients gearActivePIDF; double targetAngle;
-        switch (gear) {
+        switch (this.gear) {
             case 2:
                 targetRPM = GEAR_2_TARGET; currentGearIdle = GEAR_2_IDLE; gearActivePIDF = PIDF_GEAR_2; targetAngle = GEAR_2_ANGLE;
                 break;
@@ -92,14 +141,15 @@ public class ShooterController {
             robot.iservo2.setPosition(1.0 - targetAngle);
         }
 
-        double actualRPM1 = (robot.s1.getVelocity() / robot.SHOOTER_TICKS_PER_REV) * 60.0;
-        double actualRPM2 = (robot.s2.getVelocity() / robot.SHOOTER_TICKS_PER_REV) * 60.0;
+        // 在这里使用内联的 SHOOTER_TICKS_PER_REV 计算当前飞轮的真实 RPM
+        double actualRPM1 = (robot.s1.getVelocity() * 60.0) / SHOOTER_TICKS_PER_REV;
+        double actualRPM2 = (robot.s2.getVelocity() * 60.0) / SHOOTER_TICKS_PER_REV;
 
         // --- 2. 飞轮闭环内核决策 ---
         double currentLoopTargetRPM; PIDFCoefficients expectedPIDF;
-        if (requestSpinUp) {
+        if (this.requestSpinUp) {
             currentLoopTargetRPM = targetRPM; expectedPIDF = gearActivePIDF;
-            double targetTicksPerSec = (currentLoopTargetRPM / 60.0) * robot.SHOOTER_TICKS_PER_REV;
+            double targetTicksPerSec = (currentLoopTargetRPM / 60.0) * SHOOTER_TICKS_PER_REV;
             double currentError1 = currentLoopTargetRPM - actualRPM1;
             double currentError2 = currentLoopTargetRPM - actualRPM2;
 
@@ -124,7 +174,7 @@ public class ShooterController {
             }
         } else {
             currentLoopTargetRPM = currentGearIdle; expectedPIDF = PIDF_IDLE_COMMON;
-            double targetTicksPerSec = (currentLoopTargetRPM / 60.0) * robot.SHOOTER_TICKS_PER_REV;
+            double targetTicksPerSec = (currentLoopTargetRPM / 60.0) * SHOOTER_TICKS_PER_REV;
             robot.s1.setVelocity(targetTicksPerSec); robot.s2.setVelocity(targetTicksPerSec);
             s1CoreDriverStatus = "💤 PIDF [对应挡位怠速]";
             s2CoreDriverStatus = "💤 PIDF [对应挡位怠速]";
@@ -191,7 +241,6 @@ public class ShooterController {
                         robot.load.setPower(0.0);
                         shooterTrackStatus = "⚠️ INTERCEPT [发射中掉速：球道拦截中]";
                         interceptingFlag = true;
-                        // 可选设计：掉速拦截时是否挂起回馈？由于此时球道停止工作，建议同步置为 false，回速后再为 true
                         feedingActiveFlag = false;
                     } else {
                         robot.intake.setPower(0.9);
@@ -199,7 +248,7 @@ public class ShooterController {
                         shooterTrackStatus = "🚀 FIRE [完全开启：持续推弹中]";
                         interceptingFlag = false;
 
-                        // ✨【核心实现】门开满0.5秒且转速达标，球道正常工作，回馈值正式变为 true
+                        // ✨ 门开满0.5秒且转速达标，球道正常工作，回馈值正式变为 true
                         feedingActiveFlag = true;
                     }
                     break;
@@ -217,8 +266,16 @@ public class ShooterController {
     }
 
     // ===================================================================
-    // ==========          6. 提供给主程序的回复接口          ==========
+    // ==========          6. 提供给主程序的控制与回复接口          ==========
     // ===================================================================
+
+    public void setGear(int gear) {
+        this.gear = gear;
+    }
+
+    public void setRequestSpinUp(boolean requestSpinUp) {
+        this.requestSpinUp = requestSpinUp;
+    }
 
     /**
      * 【新功能】到速与喂弹就绪提示回馈
@@ -241,6 +298,6 @@ public class ShooterController {
     }
 
     public String getShooterStatusStr() { return shooterTrackStatus; }
-    public double getShooter1RPM() { return (robot.s1.getVelocity() / robot.SHOOTER_TICKS_PER_REV) * 60.0; }
-    public double getShooter2RPM() { return (robot.s2.getVelocity() / robot.SHOOTER_TICKS_PER_REV) * 60.0; }
+    public double getShooter1RPM() { return (robot.s1.getVelocity() / SHOOTER_TICKS_PER_REV) * 60.0; }
+    public double getShooter2RPM() { return (robot.s2.getVelocity() / SHOOTER_TICKS_PER_REV) * 60.0; }
 }
