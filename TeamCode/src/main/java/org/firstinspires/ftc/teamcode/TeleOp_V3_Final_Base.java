@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class TeleOp_V3_Final_Base extends LinearOpMode {
@@ -18,9 +17,12 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
     private boolean lastLBState = false;
     private boolean systemActivated = false;
 
-    // 无头模式控制旗标
-    private boolean isFieldCentric = true;
-    private boolean lastXState = false; // 用于切换无头/有头模式
+    // 无头模式控制旗标（默认开启）
+    protected boolean isFieldCentric = true;
+    private boolean lastOptionsState = false; // 用于捕捉 options (Start) 键的边缘触发
+
+    // 操作手视角的偏航角软件补偿（红蓝方子程序独立配置）
+    protected double angleOffset = 0.0;
 
     protected double targetAngleA = 0.0;
     protected double targetAngleB = 0.0;
@@ -44,7 +46,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
                 robot.ppointOdo.update();
             }
 
-            // 1. 获取 Pinpoint 里程计的绝对航向角与坐标
+            // 1. 获取 Pinpoint 里程计的航向角与坐标
             double rawHeading = 0.0;
             double odoX = 0.0; double odoY = 0.0;
             if (robot.ppointOdo != null) {
@@ -54,20 +56,14 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             }
             double odoHeading = normalizeAngle(rawHeading);
 
-            // 操作手防呆：比赛中若发现角度产生微小漂移，随时按下 Options 键，将当前正前方重置为 0 度
-            if (gamepad1.options) {
-                if (robot.ppointOdo != null) {
-                    robot.ppointOdo.resetPosAndIMU();
-                }
-            }
-
-            // 动态切换无头/有头模式（利用 gamepad1.x 边缘触发，方便测试与特殊情况应急）
-            boolean currentXState = gamepad1.x;
-            if (currentXState && !lastXState) {
+            // 动态切换无头/有头模式：利用 gamepad1.options (Xbox 上的 Start 键)
+            boolean currentOptionsState = gamepad1.options;
+            if (currentOptionsState && !lastOptionsState) {
                 isFieldCentric = !isFieldCentric;
             }
-            lastXState = currentXState;
+            lastOptionsState = currentOptionsState;
 
+            // 原本的开场解锁功能：完美保留，纯粹接管 systemActivated
             if (gamepad1.back) {
                 systemActivated = true;
             }
@@ -81,17 +77,18 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             if (Math.abs(rawX) < STICK_DEADZONE) rawX = 0;
             if (Math.abs(turn) < STICK_DEADZONE) turn = 0;
 
-            // 平滑映射（非线性输入优化）
+            // 平滑映射
             double driveY = Math.signum(rawY) * (rawY * rawY);
             double driveX = Math.signum(rawX) * (rawX * rawX);
 
-            // 【核心融合点：Field-Centric 无头模式解算】
+            // Field-Centric 无头模式及视线对齐解算
             if (isFieldCentric) {
-                // 必须转换为弧度制传递给三角函数进行旋转矩阵运算
-                double botHeadingRad = Math.toRadians(odoHeading);
+                // 车体航向角 叠加 红/蓝方操作手视角的偏置补偿 angleOffset
+                double driverRelativeHeading = normalizeAngle(odoHeading + angleOffset);
 
-                // 旋转矩阵解算：将场地坐标系的（driveX, driveY）投影旋转至机器人车体坐标系
-                // 注意：由于老程序中 strafe 对应摇杆 X，drive 对应摇杆 Y，故公式直接映射映射如下
+                // 转换为弧度制进行旋转矩阵解算
+                double botHeadingRad = Math.toRadians(driverRelativeHeading);
+
                 double rotX = driveX * Math.cos(-botHeadingRad) - driveY * Math.sin(-botHeadingRad);
                 double rotY = driveX * Math.sin(-botHeadingRad) + driveY * Math.cos(-botHeadingRad);
 
@@ -101,7 +98,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
 
             String targetLogStatus = "MANUAL TURN";
 
-            // 3. 高精度 P 自动自瞄转向（保留并高优先级覆盖手动 turn 输入）
+            // 3. 高精度 P 自动自瞄转向（一键锁头）
             if (gamepad1.a || gamepad1.b) {
                 double targetLoc = gamepad1.a ? targetAngleA : targetAngleB;
                 double angleError = normalizeAngle(odoHeading - targetLoc);
@@ -121,14 +118,13 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
                 turn = Math.signum(turn) * (turn * turn);
             }
 
-            // 4. 麦克纳姆轮底盘动力学解算 (Mecanum Kinematics)
-            // 根据 V3 原程序的底盘极性进行了方向对齐
+            // 4. 麦克纳姆轮底盘动力学解算
             double lfPower = driveY + driveX + turn;
             double rfPower = driveY - driveX - turn;
             double lbPower = driveY - driveX + turn;
             double rbPower = driveY + driveX - turn;
 
-            // 功率归一化（防止超过 ±1.0 导致动作变形）
+            // 功率归一化
             double maxChassisPower = Math.max(Math.max(Math.abs(lfPower), Math.abs(rfPower)), Math.max(Math.abs(lbPower), Math.abs(rbPower)));
             if (maxChassisPower > 1.0) {
                 lfPower /= maxChassisPower; rfPower /= maxChassisPower;
@@ -143,11 +139,11 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
                 robot.intake.setPower(0.0); robot.load.setPower(0.0);
                 robot.s1.setPower(0.0); robot.s2.setPower(0.0);
                 robot.aservo1.setPosition(0.4); robot.aservo2.setPosition(0.4);
-                drawTelemetry(false, "NEUTRAL", "WAITING ACTIVATION", targetLogStatus, odoHeading, odoX, odoY);
+                drawTelemetry(false, "NEUTRAL", "WAITING ACTIVATION (PRESS BACK)", targetLogStatus, odoHeading, odoX, odoY);
                 continue;
             }
 
-            // 6. 纯净的业务控制链分发（吸球/发射逻辑保持不变）
+            // 6. 业务控制链分发（吸球/发射逻辑保持不变）
             boolean currentLBState = gamepad1.left_bumper;
             if (currentLBState && !lastLBState) {
                 driveMode = (driveMode == 0) ? 1 : 0;
@@ -183,8 +179,8 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
         telemetry.addLine("============ 32477 HIGH PRECISION P-ALIGN Base ============");
         telemetry.addData("★ SYSTEM ACCESS", sysLockStr);
         telemetry.addData("★ DRIVING STATE", modeStr);
-        // 面板实时反馈当前底盘的坐标系驱动模式
         telemetry.addData("★ CHASSIS DRIVE MODE", isFieldCentric ? "🌐 FIELD-CENTRIC (无头模式)" : "🤖 ROBOT-CENTRIC (有头模式)");
+        telemetry.addData("-> Driver View Offset", "%.1f °", angleOffset);
         telemetry.addData("Chassis Lock Status", targetLogStatus);
         telemetry.addLine("----------------------------------------------------");
 
@@ -198,9 +194,10 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
         }
         telemetry.addLine("----------------------------------------------------");
         telemetry.addLine("[🤖 PPOINT ODO SINGLE SOURCE]");
-        telemetry.addData(" -> Pinpoint Heading (当前角)", "%.2f °", odoHeading);
+        telemetry.addData(" -> Raw Pinpoint Heading", "%.2f °", odoHeading);
+        telemetry.addData(" -> Compensated Heading", "%.2f °", normalizeAngle(odoHeading + angleOffset));
         telemetry.addData(" -> Pinpoint Local Pos", "X: %.1f cm | Y: %.1f cm", odoX, odoY);
-        telemetry.addLine(" -> [Tip] 按下 Gamepad1 OPTIONS 键可初始化重置航向角");
+        telemetry.addLine(" -> [Tip] 按手柄中部右侧 Start 键可随时切换 有头/无头 驾驶模式");
         telemetry.update();
     }
 
