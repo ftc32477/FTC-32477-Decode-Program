@@ -100,12 +100,12 @@ public class Auto_Blue_Near extends LinearOpMode {
         buildGranularPaths();
 
         // ===================================================================
-        // ⏱️ 在等待发车期间（Init Loop）持续刷新锁紧舵机，确保开局状态完美
+        // ⏱️ 【已修改】等待发车期间（Init Loop）仅做数据看板，不激活 Shooter 逻辑
         // ===================================================================
         while (!isStarted() && !isStopRequested()) {
-            shooterController.updateShooter(2, false, false); // 强制使其保持在 WAITING FIRE TRIGGER 并压紧闸门
-            telemetry.addLine("📌 【自动程序】32477 状态机就绪，舵机流向已修正并硬锁紧...");
-            telemetry.addData("闸门状态", shooterController.getShooterStatusStr());
+            // 🛑 已移除 shooterController.updateShooter 避免开赛前激活飞轮或推弹微调
+            telemetry.addLine("📌 【自动程序】32477 状态机就绪，等待正式发车...");
+            telemetry.addLine("💡 提示：发射机构已进入静默保护，将在正式启动后激活。");
             telemetry.update();
         }
 
@@ -130,7 +130,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 }
             }
 
-            // 实时刷新飞轮 PIDF 环路控制及舵机时序
+            // 实时刷新飞轮 PIDF 环路控制及舵机时序（正式开启后在这里完美接管）
             shooterController.updateShooter(shooterGear, requestSpinUp, requestFire);
 
             // ===================================================================
