@@ -47,21 +47,6 @@ public class IntakeController {
     }
 
     /**
-     * 📌 核心修复：补齐锁球/停止状态接口（模式二：发射状态下的常态球道控制）
-     */
-    public void runHoldMode() {
-        if (robot == null || robot.intake == null || robot.load == null) return;
-
-        // 进入发射状态后，常态下吸球电机停转，防止乱吸异物
-        robot.intake.setPower(0.0);
-
-        // 球道保持静止，锁死内部已蓄满的球，准备等待 RT 开火指令
-        robot.load.setPower(0.0);
-
-        intakeStatus = "🔒 HOLD [吸球停止，球道锁定就绪]";
-    }
-
-    /**
      * 停止或进入低功耗锁球状态（配合发射模式常态）
      * @param lockWithLowPower 是否开启 0.2 功率锁球
      */
