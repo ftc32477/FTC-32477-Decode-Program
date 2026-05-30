@@ -90,48 +90,48 @@ public class Auto_Red_Far extends LinearOpMode {
         switch (pathState) {
             case 0: // 运行 Path 1 前往第一发射点（pose1）
                 shooterGear = 4;
-                requestSpinUp = true;   // 提前热身飞轮
+                requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
                 follower.followPath(path1);
                 pathState = 1;
                 break;
 
-            case 1: // 等待到达第一发射点
+            case 1:
                 shooterGear = 4;
                 requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
                 if (hasReached(pose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 精确触发第 1 次 3 秒静止停留
+                    stateTimer.reset();
                     pathState = 2;
                 }
                 break;
 
-            case 2: // 💥 第一次射球（对应序列中 Path 1 后的 3000ms 挂起）
+            case 2:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开闸射球
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     requestFire = false;
-                    follower.followPath(path2); // 射球完毕，立刻切入后续采集/推送路径
+                    follower.followPath(path2);
                     pathState = 3;
                 }
                 break;
 
-            case 3: // 运行 Path 2
+            case 3:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
-                requestIntake = true;   // 开启常态吸球
+                requestIntake = true;
                 if (hasReached(pose2) || !follower.isBusy()) {
                     follower.followPath(path3);
                     pathState = 4;
                 }
                 break;
 
-            case 4: // 运行 Path 3
+            case 4:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
@@ -142,7 +142,7 @@ public class Auto_Red_Far extends LinearOpMode {
                 }
                 break;
 
-            case 5: // 运行 Path 4
+            case 5:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
@@ -153,7 +153,7 @@ public class Auto_Red_Far extends LinearOpMode {
                 }
                 break;
 
-            case 6: // 运行 Path 7
+            case 6:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
@@ -164,40 +164,40 @@ public class Auto_Red_Far extends LinearOpMode {
                 }
                 break;
 
-            case 7: // 运行 Path 8 返回第二发射点（pose8）
+            case 7:
                 shooterGear = 4;
-                requestSpinUp = true;   // 重新拉高飞轮转速准备开火
+                requestSpinUp = true;
                 requestFire = false;
-                requestIntake = false;  // 停止常态吸球
+                requestIntake = false;
                 if (hasReached(pose8) || !follower.isBusy()) {
-                    stateTimer.reset(); // 精确触发第 2 次 3 秒静止停留
+                    stateTimer.reset();
                     pathState = 8;
                 }
                 break;
 
-            case 8: // 💥 第二次设球（对应序列中 Path 8 后的 3000ms 挂起）
+            case 8:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开闸射球
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     requestFire = false;
-                    follower.followPath(path9); // 射球完毕，立刻进行最终收尾冲刺
+                    follower.followPath(path9);
                     pathState = 9;
                 }
                 break;
 
-            case 9: // 运行 Path 9 前往终点停靠
+            case 9:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
-                requestIntake = true;   // 开启常态吸球兜底
+                requestIntake = true;
                 if (hasReached(pose9) || !follower.isBusy()) {
-                    pathState = -1;     // 自动流程安全结束
+                    pathState = -1;
                 }
                 break;
 
-            default: // 安全兜底重置
+            default:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
@@ -219,8 +219,14 @@ public class Auto_Red_Far extends LinearOpMode {
 
         pathState = 0;
 
-        telemetry.addData("Status", "Auto_Red_Far Initialized. Ready for Match!");
-        telemetry.update();
+        // ===================================================================
+        // ⏱️ 【补齐并修正】等待发车期间（Init Loop）确保发射机构安全静默
+        // ===================================================================
+        while (!isStarted() && !isStopRequested()) {
+            telemetry.addLine("📌 【远端红方】32477 状态机就绪，等待正式发车...");
+            telemetry.addLine("💡 提示：发射机构已进入静默保护，将在正式启动后激活。");
+            telemetry.update();
+        }
 
         waitForStart();
 

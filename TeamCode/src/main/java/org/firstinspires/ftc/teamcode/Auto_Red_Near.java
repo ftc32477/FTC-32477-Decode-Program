@@ -75,7 +75,6 @@ public class Auto_Red_Near extends LinearOpMode {
             robot.aservo1.setPosition(0.4); // 默认拦截闭合位
         }
         if (robot.aservo2 != null) {
-            // 镜像安装必须物理反转，彻底解决其中一个舵机在前两次不打开或卡死的问题
             robot.aservo2.setDirection(com.qualcomm.robotcore.hardware.Servo.Direction.REVERSE);
             robot.aservo2.setPosition(0.4);
         }
@@ -100,12 +99,12 @@ public class Auto_Red_Near extends LinearOpMode {
         buildGranularPaths();
 
         // ===================================================================
-        // ⏱️ 在等待发车期间（Init Loop）持续刷新锁紧舵机，确保开局状态完美
+        // ⏱️ 【已修改】等待发车期间（Init Loop）仅做数据看板，不激活 Shooter 逻辑
         // ===================================================================
         while (!isStarted() && !isStopRequested()) {
-            shooterController.updateShooter(2, false, false); // 强制使其保持在 WAITING FIRE TRIGGER 并压紧闸门
-            telemetry.addLine("📌 【自动程序】32477 状态机就绪，舵机流向已修正并硬锁紧...");
-            telemetry.addData("闸门状态", shooterController.getShooterStatusStr());
+            // 🛑 已移除 shooterController.updateShooter 避免开赛前激活飞轮或推弹微调
+            telemetry.addLine("📌 【近端红方】32477 状态机就绪，等待正式发车...");
+            telemetry.addLine("💡 提示：发射机构已进入静默保护，将在正式启动后激活。");
             telemetry.update();
         }
 
@@ -123,8 +122,6 @@ public class Auto_Red_Near extends LinearOpMode {
             if (requestIntake) {
                 intakeController.runIntakeMode();
             } else {
-                // 当 requestFire 为 true 时，ShooterController 内部会全权接管并重写吸球与推弹功率
-                // 为了避免指令冲突，仅在不请求发射时释放吸球锁
                 if (!requestFire) {
                     intakeController.stopOrLock(false);
                 }
@@ -189,9 +186,6 @@ public class Auto_Red_Near extends LinearOpMode {
         }
     }
 
-    // =============================================================================
-    // 🛠️ 原子路径构建函数：严格拆解 .pp 文件中的最小路径单位
-    // =============================================================================
     public void buildGranularPaths() {
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, shootPose1))
@@ -254,9 +248,6 @@ public class Auto_Red_Near extends LinearOpMode {
                 follower.getPose().getY() - target.getY()) < POS_TOLERANCE;
     }
 
-    // =============================================================================
-    // 🔄 状态机流转控制（写入上层机构标志位判定）
-    // =============================================================================
     public void autonomousChassisUpdate() {
         switch (pathState) {
             case 0:
@@ -264,21 +255,21 @@ public class Auto_Red_Near extends LinearOpMode {
                 pathState = 1;
                 break;
 
-            case 1: // 💥 对应车辆发车/前往首发点点位
+            case 1:
                 shooterGear = 4;
-                requestSpinUp = true;   // 提前起旋飞轮至第二档
+                requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
                 if (hasReached(shootPose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入第 1 次时间保留周期
+                    stateTimer.reset();
                     pathState = 2;
                 }
                 break;
 
-            case 2: // 💥 对应车辆静止第 1 周期：射球
+            case 2:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开启球道开闸发射
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path2);
@@ -286,18 +277,18 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 3: // 💥 对应离开车辆暂停：切换怠速，开启常态吸球
+            case 3:
                 shooterGear = 4;
-                requestSpinUp = false;  // 飞轮切换为怠速
+                requestSpinUp = false;
                 requestFire = false;
-                requestIntake = true;   // 启动 Intake
+                requestIntake = true;
                 if (hasReached(p2_end) || !follower.isBusy()) {
                     follower.followPath(path3);
                     pathState = 4;
                 }
                 break;
 
-            case 4: // 追逐 p3_end 保持推球和吸球
+            case 4:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -308,21 +299,21 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 5: // 💥 对应车辆返回首发点点位
+            case 5:
                 shooterGear = 4;
-                requestSpinUp = true;   // 再次拉起飞轮至第二档
+                requestSpinUp = true;
                 requestFire = false;
-                requestIntake = false;  // 停止常态吸球准备开火
+                requestIntake = false;
                 if (hasReached(shootPose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入第 2 次时间保留周期
+                    stateTimer.reset();
                     pathState = 6;
                 }
                 break;
 
-            case 6: // 💥 对应车辆静止第 2 周期：射球
+            case 6:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开闸
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path5);
@@ -330,7 +321,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 7: // 💥 对应离开车辆暂停：切换怠速，开启常态吸球
+            case 7:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -341,7 +332,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 8: // 追逐 p6_end
+            case 8:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -352,21 +343,21 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 9: // 💥 对应车辆返回首发点点位
+            case 9:
                 shooterGear = 4;
-                requestSpinUp = true;   // 拉起飞轮至第二档
+                requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
                 if (hasReached(shootPose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入第 3 次时间保留周期
+                    stateTimer.reset();
                     pathState = 10;
                 }
                 break;
 
-            case 10: // 💥 对应车辆静止第 3 周期：射球
+            case 10:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;    // 开闸
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path8);
@@ -374,7 +365,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 11: // 💥 对应离开车辆暂停：切换怠速，开启常态吸球
+            case 11:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -385,7 +376,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 12: // 追逐 p9_end
+            case 12:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -396,21 +387,21 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 13: // 💥 对应车辆返回第二发射点 (waitPose2)
+            case 13:
                 shooterGear = 4;
-                requestSpinUp = true;   // 飞轮升至第二档
+                requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
                 if (hasReached(waitPose2) || !follower.isBusy()) {
-                    stateTimer.reset(); // 进入中转停留周期
+                    stateTimer.reset();
                     pathState = 14;
                 }
                 break;
 
-            case 14: // 💥 对应车辆静止第 4 周期：在中转点射球
+            case 14:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开闸
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     follower.followPath(path11);
@@ -418,17 +409,17 @@ public class Auto_Red_Near extends LinearOpMode {
                 }
                 break;
 
-            case 15: // 💥 对应离开中转点：终点冲刺，切换怠速，启动吸球
+            case 15:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
                 if (hasReached(endPose) || !follower.isBusy()) {
-                    pathState = -1;     // 状态机正常结束标记
+                    pathState = -1;
                 }
                 break;
 
-            default: // 🏁 安全兜底重置
+            default:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;

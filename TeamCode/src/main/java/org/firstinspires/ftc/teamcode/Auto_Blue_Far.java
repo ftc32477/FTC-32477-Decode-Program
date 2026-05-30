@@ -88,11 +88,13 @@ public class Auto_Blue_Far extends LinearOpMode {
         // 构建最小单位路径链
         buildGranularPaths();
 
-        // 在等待发车期间（Init Loop）持续刷新锁紧舵机，确保开局状态完美
+        // ===================================================================
+        // ⏱️ 【已修改】等待发车期间（Init Loop）仅做数据看板，不激活 Shooter 逻辑
+        // ===================================================================
         while (!isStarted() && !isStopRequested()) {
-            shooterController.updateShooter(2, false, false);
-            telemetry.addLine("📌 【远端蓝方】32477 状态机就绪，舵机流向已硬锁紧...");
-            telemetry.addData("闸门状态", shooterController.getShooterStatusStr());
+            // 🛑 已移除 shooterController.updateShooter 避免开赛前激活飞轮或推弹微调
+            telemetry.addLine("📌 【远端蓝方】32477 状态机就绪，等待正式发车...");
+            telemetry.addLine("💡 提示：发射机构已进入静默保护，将在正式启动后激活。");
             telemetry.update();
         }
 
@@ -167,9 +169,6 @@ public class Auto_Blue_Far extends LinearOpMode {
         }
     }
 
-    // =============================================================================
-    // 🛠️ 原子路径构建函数：精准复刻 .pp 文件定义的所有转向与逆向属性
-    // =============================================================================
     public void buildGranularPaths() {
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, pose1))
@@ -181,13 +180,11 @@ public class Auto_Blue_Far extends LinearOpMode {
                 .setLinearHeadingInterpolation(pose1.getHeading(), pose2.getHeading())
                 .build();
 
-        // 依据 .pp 蓝本，以下直线路段采用切线/恒定朝向进行高效率推球吸球
         path3 = follower.pathBuilder()
                 .addPath(new BezierLine(pose2, pose3))
                 .setConstantHeadingInterpolation(pose2.getHeading())
                 .build();
 
-        // Path 4 严格配置为逆向（reverse: true）拉回车辆
         path4 = follower.pathBuilder()
                 .addPath(new BezierLine(pose3, pose4))
                 .setConstantHeadingInterpolation(pose3.getHeading())
@@ -215,9 +212,6 @@ public class Auto_Blue_Far extends LinearOpMode {
                 follower.getPose().getY() - target.getY()) < POS_TOLERANCE;
     }
 
-    // =============================================================================
-    // 🔄 严格按 .pp 序列流转的紧凑型自动状态机
-    // =============================================================================
     public void autonomousChassisUpdate() {
         switch (pathState) {
             case 0:
@@ -225,41 +219,41 @@ public class Auto_Blue_Far extends LinearOpMode {
                 pathState = 1;
                 break;
 
-            case 1: // 运行 Path 1 前往首发点
+            case 1:
                 shooterGear = 4;
-                requestSpinUp = true;   // 提前把飞轮拉满起旋
+                requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
                 if (hasReached(pose1) || !follower.isBusy()) {
-                    stateTimer.reset(); // 精确触发第 1 次 3 秒静止停留
+                    stateTimer.reset();
                     pathState = 2;
                 }
                 break;
 
-            case 2: // 💥 第一次设球（对应序列中 Path 1 后的 3000ms 挂起）
+            case 2:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开闸射球
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     requestFire = false;
-                    follower.followPath(path2); // 射球完毕，立刻发车前往推球区
+                    follower.followPath(path2);
                     pathState = 3;
                 }
                 break;
 
-            case 3: // 运行 Path 2
+            case 3:
                 shooterGear = 4;
-                requestSpinUp = false;  // 飞轮切回怠速
+                requestSpinUp = false;
                 requestFire = false;
-                requestIntake = true;   // 开启 Intake 吸球/推球
+                requestIntake = true;
                 if (hasReached(pose2) || !follower.isBusy()) {
                     follower.followPath(path3);
                     pathState = 4;
                 }
                 break;
 
-            case 4: // 运行 Path 3 持续向前推球
+            case 4:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -270,7 +264,7 @@ public class Auto_Blue_Far extends LinearOpMode {
                 }
                 break;
 
-            case 5: // 运行 Path 4 倒车拉回
+            case 5:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -281,7 +275,7 @@ public class Auto_Blue_Far extends LinearOpMode {
                 }
                 break;
 
-            case 6: // 运行 Path 7 二次向前推球
+            case 6:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
@@ -292,40 +286,40 @@ public class Auto_Blue_Far extends LinearOpMode {
                 }
                 break;
 
-            case 7: // 运行 Path 8 返回第二发射点（pose8）
+            case 7:
                 shooterGear = 4;
-                requestSpinUp = true;   // 重新拉高飞轮转速准备开火
+                requestSpinUp = true;
                 requestFire = false;
-                requestIntake = false;  // 停止常态吸球
+                requestIntake = false;
                 if (hasReached(pose8) || !follower.isBusy()) {
-                    stateTimer.reset(); // 精确触发第 2 次 3 秒静止停留
+                    stateTimer.reset();
                     pathState = 8;
                 }
                 break;
 
-            case 8: // 💥 第二次设球（对应序列中 Path 8 后的 3000ms 挂起）
+            case 8:
                 shooterGear = 4;
                 requestSpinUp = true;
-                requestFire = true;     // 开闸射球
+                requestFire = true;
                 requestIntake = false;
                 if (stateTimer.seconds() > 3.0) {
                     requestFire = false;
-                    follower.followPath(path9); // 射球完毕，立刻进行最终收尾冲刺
+                    follower.followPath(path9);
                     pathState = 9;
                 }
                 break;
 
-            case 9: // 运行 Path 9 前往终点停靠
+            case 9:
                 shooterGear = 4;
                 requestSpinUp = false;
                 requestFire = false;
-                requestIntake = true;   // 开启常态吸球兜底
+                requestIntake = true;
                 if (hasReached(pose9) || !follower.isBusy()) {
-                    pathState = -1;     // 自动流程安全结束
+                    pathState = -1;
                 }
                 break;
 
-            default: // 安全兜底重置
+            default:
                 shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
