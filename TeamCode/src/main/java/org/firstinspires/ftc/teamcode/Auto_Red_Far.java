@@ -43,7 +43,7 @@ public class Auto_Red_Far extends LinearOpMode {
     private final Pose pose2     = new Pose(111.2, 6.7,  Math.toRadians(0.0));
     private final Pose pose3     = new Pose(132.0, 6.7,  Math.toRadians(0.0));
     private final Pose pose4     = new Pose(129.0, 6.7,  Math.toRadians(0.0));
-    private final Pose pose7     = new Pose(132.0, 6.7,  Math.toRadians(0.0));
+    private final Pose pose7     = new Pose(131.0, 6.7,  Math.toRadians(0.0));
     private final Pose pose8     = new Pose(84.0, 12.0, Math.toRadians(60.0));
     private final Pose pose9     = new Pose(137.3,  8.8,  Math.toRadians(90.0));
 
