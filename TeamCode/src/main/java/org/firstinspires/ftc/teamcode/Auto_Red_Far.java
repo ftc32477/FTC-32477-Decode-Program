@@ -39,12 +39,12 @@ public class Auto_Red_Far extends LinearOpMode {
     // 📍 严格提取自 Auto_Red_Far.pp 文件的真实路径坐标点配置
     // =============================================================================
     private final Pose startPose = new Pose(89.3, 8.8,  Math.toRadians(90.0));
-    private final Pose pose1     = new Pose(84.0, 12.0, Math.toRadians(60.0));
-    private final Pose pose2     = new Pose(111.2, 6.7,  Math.toRadians(0.0));
-    private final Pose pose3     = new Pose(132.0, 6.7,  Math.toRadians(0.0));
-    private final Pose pose4     = new Pose(129.0, 6.7,  Math.toRadians(0.0));
-    private final Pose pose7     = new Pose(131.0, 6.7,  Math.toRadians(0.0));
-    private final Pose pose8     = new Pose(84.0, 12.0, Math.toRadians(60.0));
+    private final Pose pose1     = new Pose(84.0, 12.0, Math.toRadians(63.5));
+    private final Pose pose2     = new Pose(111.2, 6.5,  Math.toRadians(0.0));
+    private final Pose pose3     = new Pose(125.0, 5.7,  Math.toRadians(0.0));
+    private final Pose pose4     = new Pose(119.0, 5.7,  Math.toRadians(0.0));
+    private final Pose pose7     = new Pose(127.0, 5.7,  Math.toRadians(0.0));
+    private final Pose pose8     = new Pose(84.0, 12.0, Math.toRadians(63.5));
     private final Pose pose9     = new Pose(137.3,  8.8,  Math.toRadians(90.0));
 
     // =============================================================================

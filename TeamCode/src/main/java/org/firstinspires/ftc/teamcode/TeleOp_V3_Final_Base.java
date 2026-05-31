@@ -15,7 +15,11 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
 
     private int driveMode = 0;
     private boolean lastLBState = false;
+
+    // 车载单元系统激活旗标
     private boolean systemActivated = false;
+    // 用于捕捉 back 键的边缘触发，防止长按导致连续重置
+    private boolean lastBackState = false;
 
     // 无头模式控制旗标（默认开启）
     protected boolean isFieldCentric = true;
@@ -46,7 +50,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
                 robot.ppointOdo.update();
             }
 
-            // 1. 获取 Pinpoint 里程计的航向角与坐标
+            // 1. 获取 Pinpoint 里程计的绝对航向角与坐标
             double rawHeading = 0.0;
             double odoX = 0.0; double odoY = 0.0;
             if (robot.ppointOdo != null) {
@@ -56,17 +60,27 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             }
             double odoHeading = normalizeAngle(rawHeading);
 
+            // 【核心需求：Back 键双阶状态机】
+            boolean currentBackState = gamepad1.back;
+            if (currentBackState && !lastBackState) { // 边缘触发检测
+                if (!systemActivated) {
+                    // 第一阶段：初次按下，解锁车载单元系统，不触发重置
+                    systemActivated = true;
+                } else {
+                    // 第二阶段：系统已解锁状态下再次按下，执行高精度里程计航向角重置
+                    if (robot.ppointOdo != null) {
+                        robot.ppointOdo.resetPosAndIMU();
+                    }
+                }
+            }
+            lastBackState = currentBackState;
+
             // 动态切换无头/有头模式：利用 gamepad1.options (Xbox 上的 Start 键)
             boolean currentOptionsState = gamepad1.options;
             if (currentOptionsState && !lastOptionsState) {
                 isFieldCentric = !isFieldCentric;
             }
             lastOptionsState = currentOptionsState;
-
-            // 原本的开场解锁功能：完美保留，纯粹接管 systemActivated
-            if (gamepad1.back) {
-                systemActivated = true;
-            }
 
             // 2. 摇杆原始数据采集与死区过滤
             double rawY = -gamepad1.left_stick_y;
@@ -134,7 +148,7 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
             robot.lf.setPower(lfPower); robot.rf.setPower(rfPower);
             robot.lb.setPower(lbPower); robot.rb.setPower(rbPower);
 
-            // 5. 安全挂空挡保护
+            // 5. 安全挂空挡保护阶段（未解锁前阻断全车上层机构功率）
             if (!systemActivated) {
                 robot.intake.setPower(0.0); robot.load.setPower(0.0);
                 robot.s1.setPower(0.0); robot.s2.setPower(0.0);
@@ -197,7 +211,8 @@ public class TeleOp_V3_Final_Base extends LinearOpMode {
         telemetry.addData(" -> Raw Pinpoint Heading", "%.2f °", odoHeading);
         telemetry.addData(" -> Compensated Heading", "%.2f °", normalizeAngle(odoHeading + angleOffset));
         telemetry.addData(" -> Pinpoint Local Pos", "X: %.1f cm | Y: %.1f cm", odoX, odoY);
-        telemetry.addLine(" -> [Tip] 按手柄中部右侧 Start 键可随时切换 有头/无头 驾驶模式");
+        telemetry.addLine(" -> [Back键指南] 开场按第1下解锁系统 | 比赛中再按重置航向");
+        telemetry.addLine(" -> [Start键指南] 按手柄中部右侧 Start 键应急切换 有头/无头");
         telemetry.update();
     }
 

@@ -39,12 +39,12 @@ public class Auto_Blue_Far extends LinearOpMode {
     // 📍 严格提取自 Auto_Blue_Far.pp 文件的真实路径坐标点配置
     // =============================================================================
     private final Pose startPose = new Pose(54.7, 8.8,  Math.toRadians(90.0));
-    private final Pose pose1     = new Pose(60.0, 12.0, Math.toRadians(120.0));
-    private final Pose pose2     = new Pose(32.8, 6.7,  Math.toRadians(180.0));
-    private final Pose pose3     = new Pose(10.0, 6.7,  Math.toRadians(180.0));
-    private final Pose pose4     = new Pose(15.0, 6.7,  Math.toRadians(180.0));
-    private final Pose pose7     = new Pose(10.0, 6.7,  Math.toRadians(180.0));
-    private final Pose pose8     = new Pose(60.0, 12.0, Math.toRadians(120.0));
+    private final Pose pose1     = new Pose(60.0, 12.0, Math.toRadians(116.5));
+    private final Pose pose2     = new Pose(32.8, 11.0,  Math.toRadians(180.0));
+    private final Pose pose3     = new Pose(10.0, 10.0,  Math.toRadians(180.0));
+    private final Pose pose4     = new Pose(19.0, 10.0,  Math.toRadians(180.0));
+    private final Pose pose7     = new Pose(13.0, 10.0,  Math.toRadians(180.0));
+    private final Pose pose8     = new Pose(56.0, 12.0, Math.toRadians(116.5));
     private final Pose pose9     = new Pose(6.7,  8.8,  Math.toRadians(90.0));
 
     // =============================================================================
