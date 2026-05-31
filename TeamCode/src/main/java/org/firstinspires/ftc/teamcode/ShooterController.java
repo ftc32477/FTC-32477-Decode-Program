@@ -28,7 +28,7 @@ public class ShooterController {
     private final PIDFCoefficients PIDF_IDLE_COMMON = new PIDFCoefficients(13.2, 0, 0.5, 17.0);
     private final PIDFCoefficients PIDF_GEAR_1 = new PIDFCoefficients(13.2, 0.0, 0.1, 19.2);
     private final PIDFCoefficients PIDF_GEAR_2 = new PIDFCoefficients(13.0, 0.0, 0.2, 18.1);
-    private final PIDFCoefficients PIDF_GEAR_3 = new PIDFCoefficients(18.1, 0.0, 0.1, 20.6);
+    private final PIDFCoefficients PIDF_GEAR_3 = new PIDFCoefficients(18.1, 0.0, 0.1, 19.2);
     private final PIDFCoefficients PIDF_GEAR_4 = new PIDFCoefficients(18.5, 0.0, 0.5, 22.0);
 
     // ===================================================================
@@ -36,7 +36,7 @@ public class ShooterController {
     // ===================================================================
     private final double GEAR_1_TARGET = 1650.0; private final double GEAR_1_IDLE = 1300.0;
     private final double GEAR_2_TARGET = 1750.0; private final double GEAR_2_IDLE = 1500.0;
-    private final double GEAR_3_TARGET = 2000.0; private final double GEAR_3_IDLE = 1700.0;
+    private final double GEAR_3_TARGET = 1850.0; private final double GEAR_3_IDLE = 1700.0;
     private final double GEAR_4_TARGET = 2100.0; private final double GEAR_4_IDLE = 1800.0;
 
     private final double GEAR_1_ANGLE = 0.10;
