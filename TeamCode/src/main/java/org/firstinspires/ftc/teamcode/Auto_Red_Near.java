@@ -43,7 +43,7 @@ public class Auto_Red_Near extends LinearOpMode {
 
     private final Pose p2_control    = new Pose(84.000, 82.000,  0);
     private final Pose p2_end        = new Pose(104.000, 82.000,  Math.toRadians(0.0));
-    private final Pose p3_end        = new Pose(128.800, 82.000,  Math.toRadians(0.0));
+    private final Pose p3_end        = new Pose(126.800, 82.000,  Math.toRadians(0.0));
 
     private final Pose p5_control    = new Pose(84.000, 60.000,  0);
     private final Pose p5_end        = new Pose(104.000, 60.000,  Math.toRadians(0.0));
