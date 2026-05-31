@@ -26,27 +26,27 @@ public class ShooterController {
     // ==========          1. 固化实车调测完成的 PIDF 阵列          ==========
     // ===================================================================
     private final PIDFCoefficients PIDF_IDLE_COMMON = new PIDFCoefficients(13.2, 0, 0.5, 17.0);
-    private final PIDFCoefficients PIDF_GEAR_1 = new PIDFCoefficients(13.2, 0.0, 0.1, 23.7);
-    private final PIDFCoefficients PIDF_GEAR_2 = new PIDFCoefficients(13.0, 0.0, 0.2, 20.0);
-    private final PIDFCoefficients PIDF_GEAR_3 = new PIDFCoefficients(18.1, 0.0, 0.1, 22.6);
+    private final PIDFCoefficients PIDF_GEAR_1 = new PIDFCoefficients(13.2, 0.0, 0.1, 19.2);
+    private final PIDFCoefficients PIDF_GEAR_2 = new PIDFCoefficients(13.0, 0.0, 0.2, 18.1);
+    private final PIDFCoefficients PIDF_GEAR_3 = new PIDFCoefficients(18.1, 0.0, 0.1, 20.6);
     private final PIDFCoefficients PIDF_GEAR_4 = new PIDFCoefficients(18.5, 0.0, 0.5, 22.0);
 
     // ===================================================================
     // ==========            2. 目标转速与俯仰角度参数阵列            ==========
     // ===================================================================
-    private final double GEAR_1_TARGET = 1550.0; private final double GEAR_1_IDLE = 1300.0;
-    private final double GEAR_2_TARGET = 1700.0; private final double GEAR_2_IDLE = 1500.0;
+    private final double GEAR_1_TARGET = 1650.0; private final double GEAR_1_IDLE = 1300.0;
+    private final double GEAR_2_TARGET = 1750.0; private final double GEAR_2_IDLE = 1500.0;
     private final double GEAR_3_TARGET = 2000.0; private final double GEAR_3_IDLE = 1700.0;
     private final double GEAR_4_TARGET = 2100.0; private final double GEAR_4_IDLE = 1800.0;
 
     private final double GEAR_1_ANGLE = 0.10;
-    private final double GEAR_2_ANGLE = 0.50;
+    private final double GEAR_2_ANGLE = 0.30;
     private final double GEAR_3_ANGLE = 0.50;
     private final double GEAR_4_ANGLE = 1.00;
 
     private final double BANGBANG_TRIGGER_THRESHOLD = 50.0;
     private final double RPM_TOLERANCE_LOWER = 50.0;
-    private final double RPM_TOLERANCE_UPPER = 150.0;
+    private final double RPM_TOLERANCE_UPPER = 50.0;
     private final double SERVO_OPEN_DELAY_SEC = 0.5; // 舵机完全打开所需的延时时间（秒）
 
     private boolean isFirstAcceleration = true;

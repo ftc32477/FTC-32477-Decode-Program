@@ -30,7 +30,7 @@ public class Auto_Red_Near extends LinearOpMode {
     // =============================================================================
     // 🎛️ 机构异步控制底层状态旗标（绝不阻塞底盘循环）
     // =============================================================================
-    private int shooterGear = 4;
+    private int shooterGear = 2;
     private boolean requestSpinUp = false;
     private boolean requestFire = false;
     private boolean requestIntake = false;
@@ -256,7 +256,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 1:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
@@ -267,7 +267,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 2:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = true;
                 requestIntake = false;
@@ -278,7 +278,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 3:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -289,7 +289,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 4:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -300,7 +300,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 5:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
@@ -311,7 +311,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 6:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = true;
                 requestIntake = false;
@@ -322,7 +322,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 7:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -333,7 +333,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 8:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -344,7 +344,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 9:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = false;
                 requestIntake = false;
@@ -355,7 +355,7 @@ public class Auto_Red_Near extends LinearOpMode {
                 break;
 
             case 10:
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = true;
                 requestIntake = false;

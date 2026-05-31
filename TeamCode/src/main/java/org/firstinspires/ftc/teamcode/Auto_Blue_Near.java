@@ -30,7 +30,7 @@ public class Auto_Blue_Near extends LinearOpMode {
     // =============================================================================
     // 🎛️ 机构异步控制底层状态旗标（绝不阻塞底盘循环）
     // =============================================================================
-    private int shooterGear = 4;
+    private int shooterGear = 2;
     private boolean requestSpinUp = false;
     private boolean requestFire = false;
     private boolean requestIntake = false;
@@ -265,7 +265,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 1: // 💥 对应车辆发车/前往首发点点位
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;   // 提前起旋飞轮至第二档
                 requestFire = false;
                 requestIntake = false;
@@ -287,7 +287,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 3: // 💥 对应离开车辆暂停：切换怠速，开启常态吸球
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;  // 飞轮切换为怠速
                 requestFire = false;
                 requestIntake = true;   // 启动 Intake
@@ -298,7 +298,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 4: // 追逐 p3_end 保持推球和吸球
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -309,7 +309,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 5: // 💥 对应车辆返回首发点点位
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;   // 再次拉起飞轮至第二档
                 requestFire = false;
                 requestIntake = false;  // 停止常态吸球准备开火
@@ -320,7 +320,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 6: // 💥 对应车辆静止第 2 周期：射球
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = true;     // 开闸
                 requestIntake = false;
@@ -331,7 +331,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 7: // 💥 对应离开车辆暂停：切换怠速，开启常态吸球
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -342,7 +342,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 8: // 追逐 p6_end
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = false;
                 requestFire = false;
                 requestIntake = true;
@@ -353,7 +353,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 9: // 💥 对应车辆返回首发点点位
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;   // 拉起飞轮至第二档
                 requestFire = false;
                 requestIntake = false;
@@ -364,7 +364,7 @@ public class Auto_Blue_Near extends LinearOpMode {
                 break;
 
             case 10: // 💥 对应车辆静止第 3 周期：射球
-                shooterGear = 4;
+                shooterGear = 2;
                 requestSpinUp = true;
                 requestFire = true;    // 开闸
                 requestIntake = false;
